@@ -24,7 +24,6 @@ type Game struct {
 }
 
 func (g *Game) getRoll(hand Hand, rd RollDecision) Hand {
-	fmt.Println(hand, rd)
 	retVal := Hand{}
 	for idx, keep := range rd {
 		if keep {
@@ -46,19 +45,27 @@ func (g *Game) Play() {
 }
 
 func (g *Game) playTurn(p Player) {
-	var hand Hand
-	rd := RollDecision(make([]bool, 5))
-	for i := 0; i < 2; i++ {
-		hand = g.getRoll(hand, rd)
-		rd = p.AssessRoll(hand)
-		if rd.WillKeepAll() {
-			break
+	hand1 := Hand{rand.Intn(5) + 1, rand.Intn(5) + 1, rand.Intn(5) + 1, rand.Intn(5) + 1, rand.Intn(5) + 1}
+	rd1 := p.AssessRoll(hand1)
+	if rd1.WillKeepAll() {
+		score(p, hand1)
+	} else {
+		hand2 := g.getRoll(hand1, rd1)
+		rd2 := p.AssessRoll(hand2)
+
+		if rd2.WillKeepAll() {
+			score(p, hand2)
+		} else {
+			hand3 := g.getRoll(hand2, rd2)
+			score(p, hand3)
 		}
 	}
+}
+
+func score(p Player, hand Hand) {
 	scorable := p.PickScorable(hand)
 	scorecard := p.GetScorecard()
 
 	scorecard.Score(&hand, scorable)
-
 	fmt.Println(p.GetName(), scorecard.Total())
 }
