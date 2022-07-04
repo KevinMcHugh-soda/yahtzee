@@ -80,16 +80,7 @@ func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
 	})
 	choice, _ := strconv.Atoi(input)
 
-	switch ScorableNames[choice] {
-	case OnesName:
-		return Ones{}
-	case TwosName:
-		return Twos{}
-	case ThreesName:
-		return Threes{}
-	}
-
-	return ErrorScore{}
+	return ScoreableByName(ScorableNames[choice])
 }
 
 func NewHumanPlayer() *Player {

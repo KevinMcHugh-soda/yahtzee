@@ -6,12 +6,45 @@ const (
 	OnesName   = "ones"
 	TwosName   = "twos"
 	ThreesName = "threes"
+	FoursName  = "fours"
+	FivesName  = "fives"
+	SixesName  = "sixes"
+
+	ThreeOfAKindName  = "3ofakind"
+	FourOfAKindName   = "4ofakind"
+	FullHouseName     = "fullhouse"
+	SmallStraightName = "small straight"
+	LargeStraightName = "Large Straight"
+	ChanceName        = "Chance"
+	YahtzeeName       = "Yahtzee"
 
 	ErrorName = "error"
 )
 
 var ScorableNames = []ScorableName{
-	OnesName, TwosName, ThreesName, ErrorName,
+	OnesName, TwosName, ThreesName, FoursName, FivesName, SixesName,
+	ThreeOfAKindName, FourOfAKindName, FullHouseName, SmallStraightName, LargeStraightName, ChanceName, YahtzeeName,
+	ErrorName,
+}
+
+func ScoreableByName(name ScorableName) Scoreable {
+	scorablesByName := map[ScorableName]Scoreable{
+		OnesName:          Ones{},
+		TwosName:          Twos{},
+		ThreesName:        Threes{},
+		FoursName:         Fours{},
+		FivesName:         Fives{},
+		SixesName:         Sixes{},
+		ThreeOfAKindName:  ThreeOfAKind{},
+		FourOfAKindName:   FourOfAKind{},
+		FullHouseName:     FullHouse{},
+		SmallStraightName: SmallStraight{},
+		LargeStraightName: LargeStraight{},
+		ChanceName:        Chance{},
+		YahtzeeName:       Yahtzee{},
+	}
+
+	return scorablesByName[name]
 }
 
 type Scorecard struct {
@@ -33,16 +66,23 @@ type Scorecard struct {
 }
 
 func (s *Scorecard) NameToScorePtr(name ScorableName) *int {
-	switch name {
-	case OnesName:
-		return s.ones
-	case TwosName:
-		return s.twos
-	case ThreesName:
-		return s.threes
+	nameToPtr := map[ScorableName]*int{
+		OnesName:   s.ones,
+		TwosName:   s.twos,
+		ThreesName: s.threes,
+		FoursName:  s.fours,
+		FivesName:  s.fives,
+		SixesName:  s.sixes,
+
+		ThreeOfAKindName:  s.threeOfAKind,
+		FourOfAKindName:   s.fourOfAKind,
+		SmallStraightName: s.smallStraight,
+		LargeStraightName: s.largeStraight,
+		ChanceName:        s.chance,
+		YahtzeeName:       s.yahtzee,
 	}
 
-	return nil
+	return nameToPtr[name]
 }
 
 func (s *Scorecard) Score(hand *Hand, scoreable Scoreable) int {
@@ -106,7 +146,7 @@ func (s *Scorecard) Total() int {
 }
 
 func (s *Scorecard) scoreYahtzeeBonus(hand Hand) int {
-	if s.yahtzee != nil && *s.yahtzee == 0 {
+	if s.yahtzee == nil || *s.yahtzee == 0 {
 		return 0
 	}
 	for _, count := range valueCounts(hand) {

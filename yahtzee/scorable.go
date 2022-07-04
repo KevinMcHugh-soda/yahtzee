@@ -101,7 +101,7 @@ func (s SmallStraight) Score(hand Hand) int {
 			(valueCounts[1] >= 1 && valueCounts[4] >= 1) ||
 			(valueCounts[4] >= 1 && valueCounts[5] >= 1))
 	if scoring {
-		return 40
+		return 30
 	}
 	return 0
 }
