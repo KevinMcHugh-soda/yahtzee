@@ -20,7 +20,7 @@ func (rd *RollDecision) WillKeepAll() bool {
 
 type Game struct {
 	Players []*Player
-	Winner  []*Player
+	Winner  []Player
 }
 
 func (g *Game) getRoll(hand Hand, rd RollDecision) Hand {
@@ -40,6 +40,16 @@ func (g *Game) Play() {
 	for idx := 0; idx < ScoreableCount; idx++ {
 		for _, plyr := range g.Players {
 			g.playTurn(*plyr)
+		}
+	}
+	topScore := 0
+	for _, plyr := range g.Players {
+		total := (*plyr).GetScorecard().Total()
+		if topScore > total {
+			topScore = total
+			g.Winner = []Player{*plyr}
+		} else if topScore == total {
+			g.Winner = append(g.Winner, *plyr)
 		}
 	}
 }
