@@ -34,6 +34,7 @@ func (p HumanPlayer) AssessRoll(hand Hand) RollDecision {
 	fmt.Println("Type y to keep, space to reroll:")
 	reader := bufio.NewReader(os.Stdin)
 	text, _ := reader.ReadString('\n')
+
 	bools := make([]bool, 5)
 	for idx, c := range text {
 		if idx < len(bools) {
@@ -43,31 +44,49 @@ func (p HumanPlayer) AssessRoll(hand Hand) RollDecision {
 	return RollDecision(bools)
 }
 
-func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
-	fmt.Printf("Hand: %d, %d, %d, %d, %d, \n", hand[0], hand[1], hand[2], hand[3], hand[4])
-	scorableNames := []string{"ones", "twos", "threes"}
-	fmt.Println("Choose a row to score this roll")
-	// TODO present the entire current scoreboard, with current scores
-	// TODO don't prompt someone to use a row twice
-	for idx, name := range scorableNames {
-		fmt.Printf("[%d] to score %s; ", idx, name)
-	}
-	fmt.Println("")
-	reader := bufio.NewReader(os.Stdin)
-	text, _ := reader.ReadString('\n')
-	text = strings.Trim(text, "\n")
-	// TODO Handle invalid selection - build a function which can prompt until a valid selection is made.
-	choice, err := strconv.Atoi(text)
-	if err != nil {
-		panic(err)
+func (p HumanPlayer) EnsureValidResponse(prompt string, isValid func(string) bool) string {
+	var input string
+	for {
+		fmt.Println(prompt)
+		reader := bufio.NewReader(os.Stdin)
+		input, _ = reader.ReadString('\n')
+		input = strings.Trim(input, "\n")
+
+		if isValid(input) {
+			break
+		}
 	}
 
-	switch scorableNames[choice] {
-	case "ones":
+	return input
+}
+
+func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
+	fmt.Printf("Hand: %d, %d, %d, %d, %d, \n", hand[0], hand[1], hand[2], hand[3], hand[4])
+	prompt := "Choose a row to score this roll\n"
+	// TODO present the entire current scoreboard, with current scores
+
+	// TODO 1 index this at some point
+	validScorableSelections := make(map[int]bool, len(ScorableNames))
+	for idx, name := range ScorableNames {
+		fmt.Println(name, p.Scorecard.NameToScorePtr(name))
+		if p.Scorecard.NameToScorePtr(name) == nil {
+			prompt += fmt.Sprintf("[%d] to score %s; ", idx, name)
+			validScorableSelections[idx] = true
+		}
+	}
+	input := p.EnsureValidResponse(prompt, func(input string) bool {
+		val, err := strconv.Atoi(input)
+
+		return err == nil && val >= 0 && val < len(ScorableNames) && validScorableSelections[val]
+	})
+	choice, _ := strconv.Atoi(input)
+
+	switch ScorableNames[choice] {
+	case OnesName:
 		return Ones{}
-	case "twos":
+	case TwosName:
 		return Twos{}
-	case "threes":
+	case ThreesName:
 		return Threes{}
 	}
 
@@ -77,21 +96,6 @@ func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
 func NewHumanPlayer() HumanPlayer {
 	return HumanPlayer{
 		Scorecard: Scorecard{
-			// TODO what why
-			// oh it's because they're nil in subtotal, fuck me right
-			ones:           new(int),
-			twos:           new(int),
-			threes:         new(int),
-			fours:          new(int),
-			fives:          new(int),
-			sixes:          new(int),
-			threeOfAKind:   new(int),
-			fourOfAKind:    new(int),
-			fullHouse:      new(int),
-			smallStraight:  new(int),
-			largeStraight:  new(int),
-			chance:         new(int),
-			yahtzee:        new(int),
 			yahtzeeBonuses: []int{},
 		},
 	}

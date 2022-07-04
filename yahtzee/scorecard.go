@@ -1,5 +1,19 @@
 package yahtzee
 
+type ScorableName string
+
+const (
+	OnesName   = "ones"
+	TwosName   = "twos"
+	ThreesName = "threes"
+
+	ErrorName = "error"
+)
+
+var ScorableNames = []ScorableName{
+	OnesName, TwosName, ThreesName, ErrorName,
+}
+
 type Scorecard struct {
 	ones   *int
 	twos   *int
@@ -16,6 +30,19 @@ type Scorecard struct {
 	chance         *int
 	yahtzee        *int
 	yahtzeeBonuses []int
+}
+
+func (s *Scorecard) NameToScorePtr(name ScorableName) *int {
+	switch name {
+	case OnesName:
+		return s.ones
+	case TwosName:
+		return s.twos
+	case ThreesName:
+		return s.threes
+	}
+
+	return nil
 }
 
 func (s *Scorecard) Score(hand *Hand, scoreable Scoreable) int {
@@ -80,7 +107,7 @@ func (s *Scorecard) Total() int {
 }
 
 func (s *Scorecard) scoreYahtzeeBonus(hand Hand) int {
-	if *s.yahtzee == 0 {
+	if s.yahtzee != nil && *s.yahtzee == 0 {
 		return 0
 	}
 	for _, count := range valueCounts(hand) {
