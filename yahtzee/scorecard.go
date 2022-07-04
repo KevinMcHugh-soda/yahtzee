@@ -49,7 +49,6 @@ func (s *Scorecard) Score(hand *Hand, scoreable Scoreable) int {
 	sc := scoreable.Score(*hand)
 	score := &sc
 	s.scoreYahtzeeBonus(*hand)
-	// Fail if the score is already set
 	switch scoreable.(type) {
 	case Ones:
 		s.ones = score

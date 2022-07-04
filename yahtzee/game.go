@@ -19,11 +19,12 @@ func (rd *RollDecision) WillKeepAll() bool {
 }
 
 type Game struct {
-	Players []Player
-	Winner  []Player
+	Players []*Player
+	Winner  []*Player
 }
 
 func (g *Game) getRoll(hand Hand, rd RollDecision) Hand {
+	fmt.Println(hand, rd)
 	retVal := Hand{}
 	for idx, keep := range rd {
 		if keep {
@@ -39,7 +40,7 @@ func (g *Game) Play() {
 	rand.Seed(time.Now().Unix())
 	for idx := 0; idx < ScoreableCount; idx++ {
 		for _, plyr := range g.Players {
-			g.playTurn(plyr)
+			g.playTurn(*plyr)
 		}
 	}
 }
@@ -56,8 +57,8 @@ func (g *Game) playTurn(p Player) {
 	}
 	scorable := p.PickScorable(hand)
 	scorecard := p.GetScorecard()
+
 	scorecard.Score(&hand, scorable)
-	// TODO: entering a new score erases your previous - sounds like I'm copying by value instead of by reference?
 
 	fmt.Println(p.GetName(), scorecard.Total())
 }

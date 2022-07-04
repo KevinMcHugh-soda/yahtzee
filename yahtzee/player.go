@@ -10,20 +10,20 @@ import (
 
 type Player interface {
 	GetName() string
-	GetScorecard() Scorecard
+	GetScorecard() *Scorecard
 	AssessRoll(hand Hand) RollDecision
 	PickScorable(hand Hand) Scoreable
 }
 
 type HumanPlayer struct {
-	Scorecard Scorecard
+	Scorecard *Scorecard
 }
 
 func (p HumanPlayer) GetName() string {
-	return "Mr. Human"
+	return "Mr. Human!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 }
 
-func (p HumanPlayer) GetScorecard() Scorecard {
+func (p HumanPlayer) GetScorecard() *Scorecard {
 	return p.Scorecard
 }
 
@@ -68,7 +68,6 @@ func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
 	// TODO 1 index this at some point
 	validScorableSelections := make(map[int]bool, len(ScorableNames))
 	for idx, name := range ScorableNames {
-		fmt.Println(name, p.Scorecard.NameToScorePtr(name))
 		if p.Scorecard.NameToScorePtr(name) == nil {
 			prompt += fmt.Sprintf("[%d] to score %s; ", idx, name)
 			validScorableSelections[idx] = true
@@ -93,10 +92,15 @@ func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
 	return ErrorScore{}
 }
 
-func NewHumanPlayer() HumanPlayer {
-	return HumanPlayer{
-		Scorecard: Scorecard{
-			yahtzeeBonuses: []int{},
-		},
+func NewHumanPlayer() *Player {
+	scoreCard := Scorecard{
+		yahtzeeBonuses: []int{},
 	}
+	hp := HumanPlayer{
+		Scorecard: &scoreCard,
+	}
+
+	p := Player(hp)
+
+	return &p
 }

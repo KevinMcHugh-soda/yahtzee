@@ -9,7 +9,7 @@ import (
 func main() {
 	hp := yahtzee.NewHumanPlayer()
 	g := yahtzee.Game{
-		Players: []yahtzee.Player{hp},
+		Players: []*yahtzee.Player{hp},
 	}
 	g.Play()
 	fmt.Println("Game over! Goodbye!")
