@@ -1,14 +1,16 @@
 package yahtzee
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 )
 
-type RollDecision [5]bool
+// TODO it's nice to have size in here ?
+type RollDecision []bool
 
 func (rd *RollDecision) WillKeepAll() bool {
-	for _, b := range rd {
+	for _, b := range *rd {
 		if !b {
 			return false
 		}
@@ -16,25 +18,17 @@ func (rd *RollDecision) WillKeepAll() bool {
 	return true
 }
 
-func (rd *RollDecision) ToReroll() []int {
-	torr := make([]int, 0)
-	for idx, b := range rd {
-		if !b {
-			torr = append(torr, idx)
-		}
-	}
-	return torr
-}
-
 type Game struct {
 	Players []Player
 	Winner  []Player
 }
 
-func (g *Game) getRoll(hand Hand) Hand {
+func (g *Game) getRoll(hand Hand, rd RollDecision) Hand {
 	retVal := Hand{}
-	for idx, val := range hand {
-		if val == 0 {
+	for idx, keep := range rd {
+		if keep {
+			retVal[idx] = hand[idx]
+		} else {
 			retVal[idx] = rand.Intn(5) + 1
 		}
 	}
@@ -52,9 +46,10 @@ func (g *Game) Play() {
 
 func (g *Game) playTurn(p Player) {
 	var hand Hand
+	rd := RollDecision(make([]bool, 5))
 	for i := 0; i < 2; i++ {
-		hand = g.getRoll(Hand{})
-		rd := p.AssessRoll(hand)
+		hand = g.getRoll(hand, rd)
+		rd = p.AssessRoll(hand)
 		if rd.WillKeepAll() {
 			break
 		}
@@ -62,4 +57,7 @@ func (g *Game) playTurn(p Player) {
 	scorable := p.PickScorable(hand)
 	scorecard := p.GetScorecard()
 	scorecard.Score(&hand, scorable)
+	// TODO: entering a new score erases your previous - sounds like I'm copying by value instead of by reference?
+
+	fmt.Println(p.GetName(), scorecard.Total())
 }

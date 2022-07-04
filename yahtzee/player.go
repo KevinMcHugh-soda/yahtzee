@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Player interface {
@@ -18,39 +19,44 @@ type HumanPlayer struct {
 	Scorecard Scorecard
 }
 
-func (p *HumanPlayer) GetName() string {
+func (p HumanPlayer) GetName() string {
 	return "Mr. Human"
 }
 
-func (p *HumanPlayer) GetScorecard() Scorecard {
+func (p HumanPlayer) GetScorecard() Scorecard {
 	return p.Scorecard
 }
 
 // TODO would be good to indicate roll no./rolls remaining
-func (p *HumanPlayer) AssessRoll(hand Hand) RollDecision {
+func (p HumanPlayer) AssessRoll(hand Hand) RollDecision {
 	fmt.Printf("Roll: %d, %d, %d, %d, %d, \n", hand[0], hand[1], hand[2], hand[3], hand[4])
 	// TODO present the entire current scoreboard
 	fmt.Println("Type y to keep, space to reroll:")
 	reader := bufio.NewReader(os.Stdin)
 	text, _ := reader.ReadString('\n')
-	var bools [5]bool
+	bools := make([]bool, 5)
 	for idx, c := range text {
-		bools[idx] = c == rune('y')
+		if idx < len(bools) {
+			bools[idx] = c == rune('y')
+		}
 	}
 	return RollDecision(bools)
 }
 
-func (p *HumanPlayer) PickScorable(hand Hand) Scoreable {
+func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
 	fmt.Printf("Hand: %d, %d, %d, %d, %d, \n", hand[0], hand[1], hand[2], hand[3], hand[4])
 	scorableNames := []string{"ones", "twos", "threes"}
-	fmt.Printf("Choose a row to score this roll")
+	fmt.Println("Choose a row to score this roll")
 	// TODO present the entire current scoreboard, with current scores
+	// TODO don't prompt someone to use a row twice
 	for idx, name := range scorableNames {
-		fmt.Printf("[%d] to score %s", idx, name)
+		fmt.Printf("[%d] to score %s; ", idx, name)
 	}
 	fmt.Println("")
 	reader := bufio.NewReader(os.Stdin)
 	text, _ := reader.ReadString('\n')
+	text = strings.Trim(text, "\n")
+	// TODO Handle invalid selection - build a function which can prompt until a valid selection is made.
 	choice, err := strconv.Atoi(text)
 	if err != nil {
 		panic(err)
@@ -66,4 +72,27 @@ func (p *HumanPlayer) PickScorable(hand Hand) Scoreable {
 	}
 
 	return ErrorScore{}
+}
+
+func NewHumanPlayer() HumanPlayer {
+	return HumanPlayer{
+		Scorecard: Scorecard{
+			// TODO what why
+			// oh it's because they're nil in subtotal, fuck me right
+			ones:           new(int),
+			twos:           new(int),
+			threes:         new(int),
+			fours:          new(int),
+			fives:          new(int),
+			sixes:          new(int),
+			threeOfAKind:   new(int),
+			fourOfAKind:    new(int),
+			fullHouse:      new(int),
+			smallStraight:  new(int),
+			largeStraight:  new(int),
+			chance:         new(int),
+			yahtzee:        new(int),
+			yahtzeeBonuses: []int{},
+		},
+	}
 }

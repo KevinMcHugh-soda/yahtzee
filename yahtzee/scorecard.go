@@ -22,6 +22,7 @@ func (s *Scorecard) Score(hand *Hand, scoreable Scoreable) int {
 	sc := scoreable.Score(*hand)
 	score := &sc
 	s.scoreYahtzeeBonus(*hand)
+	// Fail if the score is already set
 	switch scoreable.(type) {
 	case Ones:
 		s.ones = score
@@ -54,8 +55,16 @@ func (s *Scorecard) Score(hand *Hand, scoreable Scoreable) int {
 }
 
 func (s *Scorecard) Subtotal() int {
-	return *s.ones + *s.twos + *s.threes + *s.fours + *s.fives + *s.sixes
+	return ValOrZero(s.ones) + ValOrZero(s.twos) + ValOrZero(s.threes) + ValOrZero(s.fours) + ValOrZero(s.fives) + ValOrZero(s.sixes)
 }
+
+func ValOrZero(ptr *int) int {
+	if ptr == nil {
+		return 0
+	}
+	return *ptr
+}
+
 func (s *Scorecard) Total() int {
 	sub := s.Subtotal()
 	total := sub
@@ -66,7 +75,8 @@ func (s *Scorecard) Total() int {
 	for _, bonus := range s.yahtzeeBonuses {
 		bonusPoints = bonusPoints + bonus
 	}
-	return total + *s.threeOfAKind + *s.fourOfAKind + *s.fullHouse + *s.smallStraight + *s.largeStraight + *s.chance + *s.yahtzee + bonusPoints
+	return total + ValOrZero(s.threeOfAKind) + ValOrZero(s.fourOfAKind) + ValOrZero(s.fullHouse) +
+		ValOrZero(s.smallStraight) + ValOrZero(s.largeStraight) + ValOrZero(s.chance) + ValOrZero(s.yahtzee) + bonusPoints
 }
 
 func (s *Scorecard) scoreYahtzeeBonus(hand Hand) int {
