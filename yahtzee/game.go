@@ -82,5 +82,6 @@ func score(p Player, hand Hand) {
 	scorecard := p.GetScorecard()
 
 	scorecard.Score(&hand, scorable)
-	fmt.Println(p.GetName(), scorecard.Total())
+	fmt.Println(p.GetName())
+	fmt.Println(p.GetScorecard().Print())
 }
