@@ -69,6 +69,7 @@ func (s *Scorecard) NameToScorePtr(name ScorableName) *int {
 
 		ThreeOfAKindName:  m[ThreeOfAKindName],
 		FourOfAKindName:   m[FourOfAKindName],
+		FullHouseName:     m[FullHouseName],
 		SmallStraightName: m[SmallStraightName],
 		LargeStraightName: m[LargeStraightName],
 		ChanceName:        m[ChanceName],
