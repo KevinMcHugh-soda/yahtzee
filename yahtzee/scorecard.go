@@ -30,6 +30,7 @@ const (
 var ScorableNames = []ScorableName{
 	OnesName, TwosName, ThreesName, FoursName, FivesName, SixesName,
 	ThreeOfAKindName, FourOfAKindName, FullHouseName, SmallStraightName, LargeStraightName, ChanceName, YahtzeeName,
+	// Well, this isn't actually _scorable_, you can't record it, so, hrm.
 	YahtzeeBonusName,
 }
 
@@ -81,6 +82,7 @@ func (s *Scorecard) Score(hand *Hand, scoreable Scoreable) int {
 	score := &sc
 	s.scoreYahtzeeBonus(*hand)
 	m := *s
+	// TODO I would love to get rid of the mapping here, somehow
 	switch scoreable.(type) {
 	case Ones:
 		m[OnesName] = score
