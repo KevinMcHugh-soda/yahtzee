@@ -56,7 +56,7 @@ func (s ThreeOfAKind) Score(hand Hand) int {
 	if scoring {
 		score := 0
 		for _, value := range hand {
-			score = value
+			score += value
 		}
 		return score
 	}
@@ -72,7 +72,7 @@ func (s FourOfAKind) Score(hand Hand) int {
 	if scoring {
 		score := 0
 		for _, value := range hand {
-			score = value
+			score += value
 		}
 		return score
 	}
