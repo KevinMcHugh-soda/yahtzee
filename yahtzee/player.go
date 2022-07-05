@@ -83,7 +83,8 @@ func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
 }
 
 func NewHumanPlayer() *Player {
-	scoreCard := Scorecard{}
+	z := 0
+	scoreCard := Scorecard{YahtzeeBonusName: &z}
 	hp := HumanPlayer{
 		Scorecard: &scoreCard,
 	}
