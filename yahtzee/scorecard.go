@@ -17,6 +17,7 @@ const (
 	LargeStraightName = "Large Straight"
 	ChanceName        = "Chance"
 	YahtzeeName       = "Yahtzee"
+	YahtzeeBonusName  = "YahtzeeBonus"
 
 	ErrorName = "error"
 )
@@ -24,6 +25,7 @@ const (
 var ScorableNames = []ScorableName{
 	OnesName, TwosName, ThreesName, FoursName, FivesName, SixesName,
 	ThreeOfAKindName, FourOfAKindName, FullHouseName, SmallStraightName, LargeStraightName, ChanceName, YahtzeeName,
+	YahtzeeBonusName,
 	ErrorName,
 }
 
@@ -47,39 +49,24 @@ func ScoreableByName(name ScorableName) Scoreable {
 	return scorablesByName[name]
 }
 
-type Scorecard struct {
-	ones   *int
-	twos   *int
-	threes *int
-	fours  *int
-	fives  *int
-	sixes  *int
-
-	threeOfAKind   *int
-	fourOfAKind    *int
-	fullHouse      *int
-	smallStraight  *int
-	largeStraight  *int
-	chance         *int
-	yahtzee        *int
-	yahtzeeBonuses []int
-}
+type Scorecard map[ScorableName]*int
 
 func (s *Scorecard) NameToScorePtr(name ScorableName) *int {
+	m := *s
 	nameToPtr := map[ScorableName]*int{
-		OnesName:   s.ones,
-		TwosName:   s.twos,
-		ThreesName: s.threes,
-		FoursName:  s.fours,
-		FivesName:  s.fives,
-		SixesName:  s.sixes,
+		OnesName:   m[OnesName],
+		TwosName:   m[TwosName],
+		ThreesName: m[ThreesName],
+		FoursName:  m[FoursName],
+		FivesName:  m[FivesName],
+		SixesName:  m[SixesName],
 
-		ThreeOfAKindName:  s.threeOfAKind,
-		FourOfAKindName:   s.fourOfAKind,
-		SmallStraightName: s.smallStraight,
-		LargeStraightName: s.largeStraight,
-		ChanceName:        s.chance,
-		YahtzeeName:       s.yahtzee,
+		ThreeOfAKindName:  m[ThreeOfAKindName],
+		FourOfAKindName:   m[FourOfAKindName],
+		SmallStraightName: m[SmallStraightName],
+		LargeStraightName: m[LargeStraightName],
+		ChanceName:        m[ChanceName],
+		YahtzeeName:       m[YahtzeeName],
 	}
 
 	return nameToPtr[name]
@@ -89,39 +76,42 @@ func (s *Scorecard) Score(hand *Hand, scoreable Scoreable) int {
 	sc := scoreable.Score(*hand)
 	score := &sc
 	s.scoreYahtzeeBonus(*hand)
+	m := *s
 	switch scoreable.(type) {
 	case Ones:
-		s.ones = score
+		m[OnesName] = score
 	case Twos:
-		s.twos = score
+		m[TwosName] = score
 	case Threes:
-		s.threes = score
+		m[ThreesName] = score
 	case Fours:
-		s.fours = score
+		m[FoursName] = score
 	case Fives:
-		s.fives = score
+		m[FivesName] = score
 	case Sixes:
-		s.sixes = score
+		m[SixesName] = score
 	case ThreeOfAKind:
-		s.threeOfAKind = score
+		m[ThreeOfAKindName] = score
 	case FourOfAKind:
-		s.fourOfAKind = score
+		m[FourOfAKindName] = score
 	case FullHouse:
-		s.fullHouse = score
+		m[FullHouseName] = score
 	case SmallStraight:
-		s.smallStraight = score
+		m[SmallStraightName] = score
 	case LargeStraight:
-		s.largeStraight = score
+		m[LargeStraightName] = score
 	case Chance:
-		s.chance = score
+		m[ChanceName] = score
 	case Yahtzee:
-		s.yahtzee = score
+		m[YahtzeeName] = score
 	}
 	return *score
 }
 
 func (s *Scorecard) Subtotal() int {
-	return ValOrZero(s.ones) + ValOrZero(s.twos) + ValOrZero(s.threes) + ValOrZero(s.fours) + ValOrZero(s.fives) + ValOrZero(s.sixes)
+	m := *s
+	return ValOrZero(m[OnesName]) + ValOrZero(m[TwosName]) + ValOrZero(m[ThreesName]) +
+		ValOrZero(m[FoursName]) + ValOrZero(m[FivesName]) + ValOrZero(m[SixesName])
 }
 
 func ValOrZero(ptr *int) int {
@@ -137,22 +127,25 @@ func (s *Scorecard) Total() int {
 	if sub > 63 {
 		total = total + 25
 	}
-	bonusPoints := 0
-	for _, bonus := range s.yahtzeeBonuses {
-		bonusPoints = bonusPoints + bonus
-	}
-	return total + ValOrZero(s.threeOfAKind) + ValOrZero(s.fourOfAKind) + ValOrZero(s.fullHouse) +
-		ValOrZero(s.smallStraight) + ValOrZero(s.largeStraight) + ValOrZero(s.chance) + ValOrZero(s.yahtzee) + bonusPoints
+	m := *s
+	return total + ValOrZero(m[ThreeOfAKindName]) + ValOrZero(m[FourOfAKindName]) + ValOrZero(m[FullHouseName]) +
+		ValOrZero(m[SmallStraightName]) + ValOrZero(m[LargeStraightName]) + ValOrZero(m[ChanceName]) + ValOrZero(m[YahtzeeName]) + ValOrZero((m[YahtzeeBonusName]))
 }
 
 func (s *Scorecard) scoreYahtzeeBonus(hand Hand) int {
-	if s.yahtzee == nil || *s.yahtzee == 0 {
+	m := *s
+	if m[YahtzeeName] == nil || *m[YahtzeeName] == 0 {
 		return 0
 	}
 	for _, count := range valueCounts(hand) {
 		if count == 5 {
-			s.yahtzeeBonuses = append(s.yahtzeeBonuses, 100)
+			val := *m[YahtzeeBonusName] + 100
+			m[YahtzeeBonusName] = &val
 		}
 	}
-	return 100
+	return *m[YahtzeeBonusName]
+}
+
+func (s *Scorecard) Print() {
+
 }
