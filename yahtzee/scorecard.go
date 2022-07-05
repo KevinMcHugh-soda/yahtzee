@@ -58,6 +58,7 @@ type Scorecard map[ScorableName]*int
 
 func (s *Scorecard) NameToScorePtr(name ScorableName) *int {
 	m := *s
+	// consider constructing this with a loop
 	nameToPtr := map[ScorableName]*int{
 		OnesName:   m[OnesName],
 		TwosName:   m[TwosName],
