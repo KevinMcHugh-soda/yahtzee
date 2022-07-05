@@ -156,18 +156,23 @@ func (s *Scorecard) scoreYahtzeeBonus(hand Hand) int {
 }
 
 func (s *Scorecard) Print() string {
+	return s.PrintWithDecorator(func(ScorableName) string { return "" })
+}
+
+func (s *Scorecard) PrintWithDecorator(decFn func(ScorableName) string) string {
 	str := "-------------------------------------\n"
 	str += "| name                         score|\n"
 	m := (*s)
 	for _, name := range ScorableNames {
 		valPtr := m[name]
-		val := ""
+		val := "-"
 		if valPtr != nil {
 			val = strconv.Itoa(*valPtr)
 		}
-		str += fmt.Sprintf("| %-14s                 %-3s|\n", name, val)
+		str += fmt.Sprintf("| %-14s                 %3s|", name, val)
+		str += decFn(name) + "\n"
 	}
-	str += fmt.Sprintf("| %-14s                 %-3d|\n", "Total", s.Total())
+	str += fmt.Sprintf("| %-14s                 %3d|\n", "Total", s.Total())
 	str += "-------------------------------------\n"
 	return str
 }
