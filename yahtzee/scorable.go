@@ -49,7 +49,7 @@ func (s Sixes) Score(hand Hand) int {
 func (s ThreeOfAKind) Score(hand Hand) int {
 	scoring := false
 	for _, count := range valueCounts(hand) {
-		if count > 3 {
+		if count >= 3 {
 			scoring = true
 		}
 	}
@@ -65,7 +65,7 @@ func (s ThreeOfAKind) Score(hand Hand) int {
 func (s FourOfAKind) Score(hand Hand) int {
 	scoring := false
 	for _, count := range valueCounts(hand) {
-		if count > 4 {
+		if count >= 4 {
 			scoring = true
 		}
 	}
