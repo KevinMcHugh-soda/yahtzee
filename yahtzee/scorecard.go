@@ -73,6 +73,7 @@ func (s *Scorecard) NameToScorePtr(name ScorableName) *int {
 		LargeStraightName: m[LargeStraightName],
 		ChanceName:        m[ChanceName],
 		YahtzeeName:       m[YahtzeeName],
+		YahtzeeBonusName:  m[YahtzeeBonusName],
 	}
 
 	return nameToPtr[name]
