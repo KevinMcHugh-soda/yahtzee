@@ -62,24 +62,26 @@ func (p HumanPlayer) EnsureValidResponse(prompt string, isValid func(string) boo
 
 func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
 	fmt.Printf("Hand: %d, %d, %d, %d, %d, \n", hand[0], hand[1], hand[2], hand[3], hand[4])
-	prompt := "Choose a row to score this roll\n" + p.Scorecard.Print()
-
-	// TODO 1 index this at some point
-	validScorableSelections := make(map[int]bool, len(ScorableNames))
+	prompt := "Choose a row to score this roll\n"
+	options := make(map[int]ScorableName)
+	promptForName := make(map[ScorableName]string)
 	for idx, name := range ScorableNames {
 		if p.Scorecard.NameToScorePtr(name) == nil {
-			prompt += fmt.Sprintf("[%d] to score %s;\n", idx+1, name)
-			validScorableSelections[idx] = true
+			options[idx+1] = name
+			promptForName[name] = fmt.Sprintf(" [%d] to score %s;", idx+1, name)
 		}
 	}
+	prompt += p.Scorecard.PrintWithDecorator(func(name ScorableName) string {
+		return promptForName[name]
+	})
 	input := p.EnsureValidResponse(prompt, func(input string) bool {
 		val, err := strconv.Atoi(input)
 
-		return err == nil && val > 0 && val <= len(ScorableNames) && validScorableSelections[val]
+		return err == nil && val > 0 && val <= len(ScorableNames) && options[val] != ""
 	})
 	choice, _ := strconv.Atoi(input)
 
-	return ScoreableByName(ScorableNames[choice-1])
+	return ScoreableByName(options[choice])
 }
 
 func NewHumanPlayer() *Player {
