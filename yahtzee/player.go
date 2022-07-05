@@ -68,18 +68,18 @@ func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
 	validScorableSelections := make(map[int]bool, len(ScorableNames))
 	for idx, name := range ScorableNames {
 		if p.Scorecard.NameToScorePtr(name) == nil {
-			prompt += fmt.Sprintf("[%d] to score %s; ", idx, name)
+			prompt += fmt.Sprintf("[%d] to score %s;\n", idx+1, name)
 			validScorableSelections[idx] = true
 		}
 	}
 	input := p.EnsureValidResponse(prompt, func(input string) bool {
 		val, err := strconv.Atoi(input)
 
-		return err == nil && val >= 0 && val < len(ScorableNames) && validScorableSelections[val]
+		return err == nil && val > 0 && val <= len(ScorableNames) && validScorableSelections[val]
 	})
 	choice, _ := strconv.Atoi(input)
 
-	return ScoreableByName(ScorableNames[choice])
+	return ScoreableByName(ScorableNames[choice-1])
 }
 
 func NewHumanPlayer() *Player {
