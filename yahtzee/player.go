@@ -62,8 +62,7 @@ func (p HumanPlayer) EnsureValidResponse(prompt string, isValid func(string) boo
 
 func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
 	fmt.Printf("Hand: %d, %d, %d, %d, %d, \n", hand[0], hand[1], hand[2], hand[3], hand[4])
-	prompt := "Choose a row to score this roll\n"
-	// TODO present the entire current scoreboard, with current scores
+	prompt := "Choose a row to score this roll\n" + p.Scorecard.Print()
 
 	// TODO 1 index this at some point
 	validScorableSelections := make(map[int]bool, len(ScorableNames))

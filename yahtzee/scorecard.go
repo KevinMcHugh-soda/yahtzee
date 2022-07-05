@@ -1,23 +1,28 @@
 package yahtzee
 
+import (
+	"fmt"
+	"strconv"
+)
+
 type ScorableName string
 
 const (
-	OnesName   = "ones"
-	TwosName   = "twos"
-	ThreesName = "threes"
-	FoursName  = "fours"
-	FivesName  = "fives"
-	SixesName  = "sixes"
+	OnesName   = "Ones"
+	TwosName   = "Twos"
+	ThreesName = "Threes"
+	FoursName  = "Fours"
+	FivesName  = "Fives"
+	SixesName  = "Sixes"
 
-	ThreeOfAKindName  = "3ofakind"
-	FourOfAKindName   = "4ofakind"
-	FullHouseName     = "fullhouse"
-	SmallStraightName = "small straight"
+	ThreeOfAKindName  = "3 Of A Kind"
+	FourOfAKindName   = "4 Of A Kind"
+	FullHouseName     = "Full House"
+	SmallStraightName = "Small Straight"
 	LargeStraightName = "Large Straight"
 	ChanceName        = "Chance"
 	YahtzeeName       = "Yahtzee"
-	YahtzeeBonusName  = "YahtzeeBonus"
+	YahtzeeBonusName  = "Yahtzee Bonus"
 
 	ErrorName = "error"
 )
@@ -26,7 +31,6 @@ var ScorableNames = []ScorableName{
 	OnesName, TwosName, ThreesName, FoursName, FivesName, SixesName,
 	ThreeOfAKindName, FourOfAKindName, FullHouseName, SmallStraightName, LargeStraightName, ChanceName, YahtzeeName,
 	YahtzeeBonusName,
-	ErrorName,
 }
 
 func ScoreableByName(name ScorableName) Scoreable {
@@ -146,6 +150,19 @@ func (s *Scorecard) scoreYahtzeeBonus(hand Hand) int {
 	return *m[YahtzeeBonusName]
 }
 
-func (s *Scorecard) Print() {
-
+func (s *Scorecard) Print() string {
+	str := "-------------------------------------\n"
+	str += "| name                         score|\n"
+	m := (*s)
+	for _, name := range ScorableNames {
+		valPtr := m[name]
+		val := ""
+		if valPtr != nil {
+			val = strconv.Itoa(*valPtr)
+		}
+		str += fmt.Sprintf("| %-14s                 %-3s|\n", name, val)
+	}
+	str += fmt.Sprintf("| %-14s                 %-3d|\n", "Total", s.Total())
+	str += "-------------------------------------\n"
+	return str
 }
