@@ -143,11 +143,14 @@ func (s *Scorecard) scoreYahtzeeBonus(hand Hand) int {
 	}
 	for _, count := range valueCounts(hand) {
 		if count == 5 {
-			val := *m[YahtzeeBonusName] + 100
+			val := 100
+			if m[YahtzeeBonusName] != nil {
+				val = *m[YahtzeeBonusName] + 100
+			}
 			m[YahtzeeBonusName] = &val
 		}
 	}
-	return *m[YahtzeeBonusName]
+	return ValOrZero(m[YahtzeeBonusName])
 }
 
 func (s *Scorecard) Print() string {
