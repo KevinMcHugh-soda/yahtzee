@@ -29,10 +29,14 @@ func (g *Game) getRoll(hand Hand, rd RollDecision) Hand {
 		if keep {
 			retVal[idx] = hand[idx]
 		} else {
-			retVal[idx] = rand.Intn(5) + 1
+			retVal[idx] = rollDie()
 		}
 	}
 	return retVal
+}
+
+func rollDie() int {
+	return rand.Intn(6) + 1
 }
 
 func (g *Game) Play() {
@@ -55,7 +59,8 @@ func (g *Game) Play() {
 }
 
 func (g *Game) playTurn(p Player) {
-	hand1 := Hand{rand.Intn(5) + 1, rand.Intn(5) + 1, rand.Intn(5) + 1, rand.Intn(5) + 1, rand.Intn(5) + 1}
+	hand1 := Hand{rollDie(), rollDie(), rollDie(), rollDie(), rollDie()}
+	// hand1 := Hand{6, 6, 6, 6, 6}
 	rd1 := p.AssessRoll(hand1)
 	if rd1.WillKeepAll() {
 		score(p, hand1)
