@@ -85,6 +85,9 @@ func (s FullHouse) Score(hand Hand) int {
 			hasTwo = true
 		} else if count == 3 {
 			hasThree = true
+		} else if count == 5 {
+			hasTwo = true
+			hasThree = true
 		}
 	}
 
