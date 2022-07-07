@@ -30,7 +30,6 @@ func (p HumanPlayer) GetScorecard() *Scorecard {
 // TODO would be good to indicate roll no./rolls remaining
 func (p HumanPlayer) AssessRoll(hand Hand) RollDecision {
 	fmt.Printf("Roll: %d, %d, %d, %d, %d, \n", hand[0], hand[1], hand[2], hand[3], hand[4])
-	// TODO present the entire current scoreboard
 	fmt.Println("Type y to keep, space to reroll:")
 	reader := bufio.NewReader(os.Stdin)
 	text, _ := reader.ReadString('\n')
