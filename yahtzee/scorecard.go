@@ -15,6 +15,9 @@ const (
 	FivesName  = "Fives"
 	SixesName  = "Sixes"
 
+	SubtotalName = "Subtotal"
+	BonusName    = "Bonus"
+
 	ThreeOfAKindName  = "3 Of A Kind"
 	FourOfAKindName   = "4 Of A Kind"
 	FullHouseName     = "Full House"
@@ -29,6 +32,7 @@ const (
 
 var ScorableNames = []ScorableName{
 	OnesName, TwosName, ThreesName, FoursName, FivesName, SixesName,
+	SubtotalName, BonusName,
 	ThreeOfAKindName, FourOfAKindName, FullHouseName, SmallStraightName, LargeStraightName, ChanceName, YahtzeeName,
 	// Well, this isn't actually _scorable_, you can't record it, so, hrm.
 	YahtzeeBonusName,
@@ -58,6 +62,13 @@ type Scorecard map[ScorableName]*int
 
 func (s *Scorecard) NameToScorePtr(name ScorableName) *int {
 	m := *s
+	sub := s.Subtotal()
+	// eh, fix this
+	bonus := sub
+	if sub > 63 {
+		bonus = sub + 25
+	}
+
 	// consider constructing this with a loop
 	nameToPtr := map[ScorableName]*int{
 		OnesName:   m[OnesName],
@@ -66,6 +77,9 @@ func (s *Scorecard) NameToScorePtr(name ScorableName) *int {
 		FoursName:  m[FoursName],
 		FivesName:  m[FivesName],
 		SixesName:  m[SixesName],
+
+		SubtotalName: &sub,
+		BonusName:    &bonus,
 
 		ThreeOfAKindName:  m[ThreeOfAKindName],
 		FourOfAKindName:   m[FourOfAKindName],
@@ -133,7 +147,7 @@ func ValOrZero(ptr *int) int {
 func (s *Scorecard) Total() int {
 	sub := s.Subtotal()
 	total := sub
-	if sub > 63 {
+	if sub >= 63 {
 		total = total + 25
 	}
 	m := *s
@@ -169,7 +183,15 @@ func (s *Scorecard) PrintWithDecorator(decFn func(ScorableName) string) string {
 	for _, name := range ScorableNames {
 		valPtr := m[name]
 		val := "-"
-		if valPtr != nil {
+		if name == SubtotalName {
+			val = strconv.Itoa(s.Subtotal())
+		} else if name == BonusName {
+			if s.Subtotal() >= 63 { //TODO extract this
+				val = "25"
+			} else {
+				val = "0"
+			}
+		} else if valPtr != nil {
 			val = strconv.Itoa(*valPtr)
 		}
 		str += fmt.Sprintf("| %-14s                 %3s|", name, val)
