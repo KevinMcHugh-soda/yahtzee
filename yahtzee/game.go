@@ -3,6 +3,7 @@ package yahtzee
 import (
 	"fmt"
 	"math/rand"
+	"sort"
 	"time"
 )
 
@@ -24,15 +25,16 @@ type Game struct {
 }
 
 func (g *Game) getRoll(hand Hand, rd RollDecision) Hand {
-	retVal := Hand{}
+	retSlice := make([]int, 5)
 	for idx, keep := range rd {
 		if keep {
-			retVal[idx] = hand[idx]
+			retSlice[idx] = hand[idx]
 		} else {
-			retVal[idx] = rollDie()
+			retSlice[idx] = rollDie()
 		}
 	}
-	return retVal
+	sort.Ints(retSlice)
+	return Hand{retSlice[0], retSlice[1], retSlice[2], retSlice[3], retSlice[4]}
 }
 
 func rollDie() int {
@@ -59,7 +61,9 @@ func (g *Game) Play() {
 }
 
 func (g *Game) playTurn(p Player) {
-	hand1 := Hand{rollDie(), rollDie(), rollDie(), rollDie(), rollDie()}
+	hSlice := []int{rollDie(), rollDie(), rollDie(), rollDie(), rollDie()}
+	sort.Ints(hSlice)
+	hand1 := Hand{hSlice[0], hSlice[1], hSlice[2], hSlice[3], hSlice[4]}
 	// hand1 := Hand{6, 6, 6, 6, 6}
 	rd1 := p.AssessRoll(hand1)
 	if rd1.WillKeepAll() {
