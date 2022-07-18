@@ -95,3 +95,25 @@ func NewHumanPlayer() *Player {
 
 	return &p
 }
+
+type AIPlayer struct {
+	Scorecard
+}
+
+func (ai AIPlayer) GetName() string {
+	return "🤖"
+}
+
+func (ai AIPlayer) GetScorecard() Scorecard {
+	return ai.Scorecard
+}
+
+func (ai AIPlayer) AssessRoll(hand Hand) RollDecision {
+	// calculate a targeted scorable, given incomplete scorables and probabilites of completion
+	panic("not implemented") // TODO: Implement
+}
+
+func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
+	// Pick rarest scorable with points?
+	panic("not implemented") // TODO: Implement
+}
