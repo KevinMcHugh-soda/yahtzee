@@ -63,10 +63,10 @@ func (g *Game) Play() {
 }
 
 func (g *Game) playTurn(p Player) {
-	// hSlice := []int{rollDie(), rollDie(), rollDie(), rollDie(), rollDie()}
-	// sort.Ints(hSlice)
-	// hand1 := Hand{hSlice[0], hSlice[1], hSlice[2], hSlice[3], hSlice[4]}
-	hand1 := Hand{6, 6, 6, 6, 6}
+	hSlice := []int{rollDie(), rollDie(), rollDie(), rollDie(), rollDie()}
+	sort.Ints(hSlice)
+	hand1 := Hand{hSlice[0], hSlice[1], hSlice[2], hSlice[3], hSlice[4]}
+	// hand1 := Hand{6, 6, 6, 6, 6}
 	rd1 := p.AssessRoll(hand1, 2)
 	if rd1.WillKeepAll() {
 		score(p, hand1)
@@ -84,6 +84,7 @@ func (g *Game) playTurn(p Player) {
 }
 
 func score(p Player, hand Hand) {
+	// TOOD: This apparently allows doublepicking
 	scorable := p.PickScorable(hand)
 	scorecard := p.GetScorecard()
 

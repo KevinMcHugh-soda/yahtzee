@@ -1,6 +1,6 @@
 package yahtzee
 
-import "fmt"
+import "math"
 
 // This lies, kind of. It returns the greater probability to hit of the small or large straight
 func (ls LargeStraight) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
@@ -33,38 +33,37 @@ func (ss SmallStraight) ProbabilityToHit(hand Hand, rollsRemaining int) float64 
 func (s Ones) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
 	missing := 5 - counts[1]
-	return 1.0 - float64(rollsRemaining*missing)/6.0
+	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
 func (s Twos) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
 	missing := 5 - counts[2]
-	return 1.0 - float64(rollsRemaining*missing)/6.0
+	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
 func (s Threes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
 	missing := 5 - counts[3]
-	return 1.0 - float64(rollsRemaining*missing)/6.0
+	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
 func (s Fours) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
 	missing := 5 - counts[4]
-	return 1.0 - float64(rollsRemaining*missing)/6.0
+	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
 func (s Fives) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
 	missing := 5 - counts[5]
-	return 1.0 - float64(rollsRemaining*missing)/6.0
+	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
 func (s Sixes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	fmt.Println(counts)
 	missing := 5 - counts[6]
-	return 1.0 - float64(rollsRemaining*missing)/6.0
+	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
 func (s ThreeOfAKind) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
@@ -83,6 +82,17 @@ func (s ThreeOfAKind) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 }
 
 func (s FourOfAKind) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	counts := valueCounts(hand)
+	highestCount := 0
+	for _, count := range counts {
+		if count > highestCount {
+			highestCount = count
+		}
+	}
+	if highestCount >= 4 {
+		return 1.0
+	}
+	// TODO
 	return 0.0
 }
 
@@ -91,9 +101,20 @@ func (s FullHouse) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 }
 
 func (s Chance) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
-	return 1.0
+	return 0.0
 }
 
 func (s Yahtzee) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	counts := valueCounts(hand)
+	highestCount := 0
+	for _, count := range counts {
+		if count > highestCount {
+			highestCount = count
+		}
+	}
+	if highestCount == 5 {
+		return 1.0
+	}
+	// TODO
 	return 0.0
 }

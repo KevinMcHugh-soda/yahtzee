@@ -31,6 +31,7 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 	// calculate a targeted scorable, given incomplete scorables and probabilites of completion
 	highestExpectedScore := 0.0
 	var highestScorable ScorableName
+	fmt.Println(hand)
 	for _, name := range ScorableNames {
 		scorable := ScoreableByName(name)
 		if scorable == nil {
@@ -38,8 +39,9 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 		}
 		prob := scorable.ProbabilityToHit(hand, rollsRemaining)
 		best := scorable.MaxPossible()
+		// This doesn't work at all for chance, and says chance will always give you a 30 lol
 		expected := prob * float64(best)
-		fmt.Println(name, prob, best, expected)
+		fmt.Printf("	%s, %.2f, %d, %.2f\n", name, prob, best, expected)
 		if expected > highestExpectedScore {
 			highestExpectedScore = expected
 			highestScorable = name
@@ -67,7 +69,7 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 	for _, name := range ScorableNames {
 		scorable := ScoreableByName(name)
 		// TODO maybe a NullScorable?
-		if scorable == nil {
+		if scorable == nil || ai.Scorecard.NameToScorePtr(name) != nil {
 			continue
 		}
 		score := scorable.Score(hand)
@@ -80,7 +82,7 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 	}
 
 	dec := ScoreableByName(highestScorable)
-	fmt.Println(hand, dec)
+	fmt.Printf("given %x, choosing %s \n", hand, highestScorable)
 	return dec
 }
 
@@ -117,7 +119,7 @@ func (s FaceValueStrategy) PickKeepers(hand Hand) RollDecision {
 	}
 
 	for idx, die := range hand {
-		if die == mostPresentValue+1 {
+		if die == mostPresentValue {
 			keep[idx] = true
 		}
 
