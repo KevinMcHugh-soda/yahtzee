@@ -1,5 +1,7 @@
 package yahtzee
 
+import "fmt"
+
 // This lies, kind of. It returns the greater probability to hit of the small or large straight
 func (ls LargeStraight) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	coveredVals := valueCounts(hand)
@@ -31,37 +33,38 @@ func (ss SmallStraight) ProbabilityToHit(hand Hand, rollsRemaining int) float64 
 func (s Ones) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
 	missing := 5 - counts[1]
-	return float64(rollsRemaining*missing) / 6.0
+	return 1.0 - float64(rollsRemaining*missing)/6.0
 }
 
 func (s Twos) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
 	missing := 5 - counts[2]
-	return float64(rollsRemaining*missing) / 6.0
+	return 1.0 - float64(rollsRemaining*missing)/6.0
 }
 
 func (s Threes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
 	missing := 5 - counts[3]
-	return float64(rollsRemaining*missing) / 6.0
+	return 1.0 - float64(rollsRemaining*missing)/6.0
 }
 
 func (s Fours) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
 	missing := 5 - counts[4]
-	return float64(rollsRemaining*missing) / 6.0
+	return 1.0 - float64(rollsRemaining*missing)/6.0
 }
 
 func (s Fives) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
 	missing := 5 - counts[5]
-	return float64(rollsRemaining*missing) / 6.0
+	return 1.0 - float64(rollsRemaining*missing)/6.0
 }
 
 func (s Sixes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
+	fmt.Println(counts)
 	missing := 5 - counts[6]
-	return float64(rollsRemaining*missing) / 6.0
+	return 1.0 - float64(rollsRemaining*missing)/6.0
 }
 
 func (s ThreeOfAKind) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {

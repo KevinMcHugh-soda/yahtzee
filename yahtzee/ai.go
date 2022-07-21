@@ -39,10 +39,12 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 		prob := scorable.ProbabilityToHit(hand, rollsRemaining)
 		best := scorable.MaxPossible()
 		expected := prob * float64(best)
+		fmt.Println(name, prob, best, expected)
 		if expected > highestExpectedScore {
 			highestExpectedScore = expected
 			highestScorable = name
 		}
+		// TODO if expected == score then short circuit and return all keeps
 	}
 	// TODO: Build a strategy for each ScorableVariety:
 	// FaceValueStrategy keeps whichever value we have most of
@@ -62,7 +64,6 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 	highestScore := 0
 	var highestScorable ScorableName
-	fmt.Println(hand)
 	for _, name := range ScorableNames {
 		scorable := ScoreableByName(name)
 		// TODO maybe a NullScorable?
@@ -79,7 +80,7 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 	}
 
 	dec := ScoreableByName(highestScorable)
-	fmt.Println(dec)
+	fmt.Println(hand, dec)
 	return dec
 }
 
@@ -91,7 +92,7 @@ func StrategyForScorable(name ScorableName) ScorableVarietyStrategy {
 		// TODO:
 		OfAKindVariety:   FaceValueStrategy{},
 		FullHouseVariety: FaceValueStrategy{},
-		StraightVariety:  FaceValueStrategy{},
+		StraightVariety:  StraightStrategy{},
 		ChanceVariety:    FaceValueStrategy{},
 	}
 
@@ -122,5 +123,20 @@ func (s FaceValueStrategy) PickKeepers(hand Hand) RollDecision {
 
 	}
 
+	return RollDecision(keep)
+}
+
+type StraightStrategy struct{}
+
+func (s StraightStrategy) PickKeepers(hand Hand) RollDecision {
+	keep := make([]bool, 5)
+	// this is going to be wrong - it will keep both 1 and 6, but:
+	last := 0
+	for idx, cur := range hand {
+		if last != cur {
+			keep[idx] = true
+		}
+		last = cur
+	}
 	return RollDecision(keep)
 }
