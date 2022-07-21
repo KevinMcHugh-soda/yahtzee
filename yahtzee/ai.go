@@ -48,11 +48,6 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 		}
 		// TODO if expected == score then short circuit and return all keeps
 	}
-	// TODO: Build a strategy for each ScorableVariety:
-	// FaceValueStrategy keeps whichever value we have most of
-	// OfAKindStrategy is similar but might prefer 4,4,4,4,6 over trying for 4,4,4,4,4?
-	// StraightStrategy keeps one of each (eventually handle the 1/6 thing)
-	// FullHouseStrategy is a bespoke little snowflake
 
 	strategy := StrategyForScorable(highestScorable)
 	if strategy == nil {
@@ -91,7 +86,11 @@ func StrategyForScorable(name ScorableName) ScorableVarietyStrategy {
 	// TODO: we can probably get rid of the ScorableVariety type honestly.
 	strategyMap := map[ScorableVariety]ScorableVarietyStrategy{
 		FaceValueVariety: FaceValueStrategy{},
-		// TODO:
+		// TODO: Build a strategy for each ScorableVariety:
+		// FaceValueStrategy keeps whichever value we have most of
+		// OfAKindStrategy is similar but might prefer 4,4,4,4,6 over trying for 4,4,4,4,4?
+		// StraightStrategy keeps one of each (eventually handle the 1/6 thing)
+		// FullHouseStrategy is a bespoke little snowflake
 		OfAKindVariety:   FaceValueStrategy{},
 		FullHouseVariety: FaceValueStrategy{},
 		StraightVariety:  StraightStrategy{},
@@ -119,6 +118,7 @@ func (s FaceValueStrategy) PickKeepers(hand Hand) RollDecision {
 	}
 
 	for idx, die := range hand {
+		// lol - so if the target is Ones and the Hand is [2,2,2,3,5] this will hold the 2s lol
 		if die == mostPresentValue {
 			keep[idx] = true
 		}

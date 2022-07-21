@@ -10,13 +10,16 @@ import (
 func main() {
 	// hp := yahtzee.NewHumanPlayer()
 	seed := time.Now().Unix()
-	fmt.Printf("Playing a new game with seed: %d", seed)
+	defer func() {
+		fmt.Println("Game over! Goodbye!")
+		fmt.Printf("Seed was %d", seed)
+	}()
+	fmt.Printf("Playing a new game with seed: %d \n", seed)
 	ai := yahtzee.NewAiPlayer()
 	g := yahtzee.Game{
 		Players: []*yahtzee.Player{ai},
 		Seed:    seed,
 	}
 	g.Play()
-	fmt.Println("Game over! Goodbye!")
-	fmt.Printf("Seed was %d", seed)
+
 }
