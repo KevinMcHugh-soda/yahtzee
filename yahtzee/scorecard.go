@@ -5,6 +5,39 @@ import (
 	"strconv"
 )
 
+type ScorableVariety string
+
+const (
+	FaceValueVariety = "FaceValue"
+	StraightVariety  = "Straight"
+	OfAKindVariety   = "OfAKind"
+	FullHouseVariety = "FullHouse"
+	ChanceVariety    = "Chance"
+)
+
+func (name ScorableName) VarietyOfScorable() ScorableVariety {
+	mapping := map[ScorableName]ScorableVariety{
+		OnesName:   FaceValueVariety,
+		TwosName:   FaceValueVariety,
+		ThreesName: FaceValueVariety,
+		FoursName:  FaceValueVariety,
+		FivesName:  FaceValueVariety,
+		SixesName:  FaceValueVariety,
+
+		SmallStraightName: StraightVariety,
+		LargeStraightName: StraightVariety,
+
+		ThreeOfAKindName: OfAKindVariety,
+		FourOfAKindName:  OfAKindVariety,
+		YahtzeeName:      OfAKindVariety,
+
+		FullHouseName: FullHouseVariety,
+
+		ChanceName: ChanceVariety,
+	}
+	return mapping[name]
+}
+
 type ScorableName string
 
 const (
@@ -200,4 +233,56 @@ func (s *Scorecard) PrintWithDecorator(decFn func(ScorableName) string) string {
 	str += fmt.Sprintf("| %-14s                 %3d|\n", "Total", s.Total())
 	str += "-------------------------------------\n"
 	return str
+}
+
+func (s Ones) MaxPossible() int {
+	return 5
+}
+
+func (s Twos) MaxPossible() int {
+	return 5 * 2
+}
+
+func (s Threes) MaxPossible() int {
+	return 5 * 3
+}
+
+func (s Fours) MaxPossible() int {
+	return 5 * 4
+}
+
+func (s Fives) MaxPossible() int {
+	return 5 * 5
+}
+
+func (s Sixes) MaxPossible() int {
+	return 5 * 6
+}
+
+func (s ThreeOfAKind) MaxPossible() int {
+	return 5 * 6
+}
+
+func (s FourOfAKind) MaxPossible() int {
+	return 5 * 6
+}
+
+func (s FullHouse) MaxPossible() int {
+	return 25
+}
+
+func (s SmallStraight) MaxPossible() int {
+	return 30
+}
+
+func (s LargeStraight) MaxPossible() int {
+	return 40
+}
+
+func (s Chance) MaxPossible() int {
+	return 5 * 6
+}
+
+func (s Yahtzee) MaxPossible() int {
+	return 50
 }

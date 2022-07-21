@@ -8,6 +8,8 @@ import (
 )
 
 // TODO it's nice to have size in here ?
+// Is false keep or roll?
+// true is keep, I think
 type RollDecision []bool
 
 func (rd *RollDecision) WillKeepAll() bool {
@@ -65,12 +67,12 @@ func (g *Game) playTurn(p Player) {
 	sort.Ints(hSlice)
 	hand1 := Hand{hSlice[0], hSlice[1], hSlice[2], hSlice[3], hSlice[4]}
 	// hand1 := Hand{6, 6, 6, 6, 6}
-	rd1 := p.AssessRoll(hand1)
+	rd1 := p.AssessRoll(hand1, 2)
 	if rd1.WillKeepAll() {
 		score(p, hand1)
 	} else {
 		hand2 := g.getRoll(hand1, rd1)
-		rd2 := p.AssessRoll(hand2)
+		rd2 := p.AssessRoll(hand2, 1)
 
 		if rd2.WillKeepAll() {
 			score(p, hand2)

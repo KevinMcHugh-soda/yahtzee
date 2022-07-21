@@ -23,3 +23,74 @@ func (ls LargeStraight) ProbabilityToHit(hand Hand, rollsRemaining int) float64 
 	}
 	return highProb
 }
+
+func (ss SmallStraight) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	return 0.0
+}
+
+func (s Ones) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	counts := valueCounts(hand)
+	missing := 5 - counts[1]
+	return float64(rollsRemaining*missing) / 6.0
+}
+
+func (s Twos) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	counts := valueCounts(hand)
+	missing := 5 - counts[2]
+	return float64(rollsRemaining*missing) / 6.0
+}
+
+func (s Threes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	counts := valueCounts(hand)
+	missing := 5 - counts[3]
+	return float64(rollsRemaining*missing) / 6.0
+}
+
+func (s Fours) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	counts := valueCounts(hand)
+	missing := 5 - counts[4]
+	return float64(rollsRemaining*missing) / 6.0
+}
+
+func (s Fives) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	counts := valueCounts(hand)
+	missing := 5 - counts[5]
+	return float64(rollsRemaining*missing) / 6.0
+}
+
+func (s Sixes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	counts := valueCounts(hand)
+	missing := 5 - counts[6]
+	return float64(rollsRemaining*missing) / 6.0
+}
+
+func (s ThreeOfAKind) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	counts := valueCounts(hand)
+	highestCount := 0
+	for _, count := range counts {
+		if count > highestCount {
+			highestCount = count
+		}
+	}
+	if highestCount >= 3 {
+		return 1.0
+	}
+	// TODO
+	return 0.0
+}
+
+func (s FourOfAKind) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	return 0.0
+}
+
+func (s FullHouse) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	return 0.0
+}
+
+func (s Chance) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	return 1.0
+}
+
+func (s Yahtzee) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
+	return 0.0
+}

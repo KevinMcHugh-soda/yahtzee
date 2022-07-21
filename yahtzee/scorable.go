@@ -7,6 +7,8 @@ type Hand [5]int
 
 type Scoreable interface {
 	Score(hand Hand) int
+	MaxPossible() int
+	ProbabilityToHit(hand Hand, rollsRemaining int) float64
 }
 
 type Ones struct{}
@@ -99,10 +101,10 @@ func (s FullHouse) Score(hand Hand) int {
 func (s SmallStraight) Score(hand Hand) int {
 	valueCounts := valueCounts(hand)
 
-	scoring := (valueCounts[2] >= 1 && valueCounts[3] >= 1) &&
-		((valueCounts[0] >= 1 && valueCounts[1] >= 1) ||
-			(valueCounts[1] >= 1 && valueCounts[4] >= 1) ||
-			(valueCounts[4] >= 1 && valueCounts[5] >= 1))
+	scoring := (valueCounts[3] >= 1 && valueCounts[4] >= 1) &&
+		((valueCounts[1] >= 1 && valueCounts[2] >= 1) ||
+			(valueCounts[2] >= 1 && valueCounts[5] >= 1) ||
+			(valueCounts[5] >= 1 && valueCounts[6] >= 1))
 	if scoring {
 		return 30
 	}
@@ -111,7 +113,7 @@ func (s SmallStraight) Score(hand Hand) int {
 func (s LargeStraight) Score(hand Hand) int {
 	valueCounts := valueCounts(hand)
 
-	scoring := (valueCounts[1] == 1 && valueCounts[2] == 1 && valueCounts[3] == 1 && valueCounts[4] == 1) && ((valueCounts[0] == 1) || (valueCounts[5] == 1))
+	scoring := (valueCounts[2] == 1 && valueCounts[3] == 1 && valueCounts[4] == 1 && valueCounts[5] == 1) && ((valueCounts[1] == 1) || (valueCounts[6] == 1))
 	if scoring {
 		return 40
 	}
@@ -137,11 +139,11 @@ func (s Yahtzee) Score(hand Hand) int {
 	return 0
 }
 
-func valueCounts(hand Hand) [6]int {
-	var valueCounts [6]int
+func valueCounts(hand Hand) map[int]int {
+	valueCounts := make(map[int]int, 0)
 
 	for _, value := range hand {
-		valueCounts[value-1] = valueCounts[value-1] + 1
+		valueCounts[value] = valueCounts[value] + 1
 	}
 	return valueCounts
 }

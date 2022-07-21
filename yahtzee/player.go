@@ -11,7 +11,7 @@ import (
 type Player interface {
 	GetName() string
 	GetScorecard() *Scorecard
-	AssessRoll(hand Hand) RollDecision
+	AssessRoll(hand Hand, rollsRemaining int) RollDecision
 	PickScorable(hand Hand) Scoreable
 }
 
@@ -28,7 +28,7 @@ func (p HumanPlayer) GetScorecard() *Scorecard {
 }
 
 // TODO would be good to indicate roll no./rolls remaining
-func (p HumanPlayer) AssessRoll(hand Hand) RollDecision {
+func (p HumanPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 	fmt.Printf("Roll: %d, %d, %d, %d, %d, \n", hand[0], hand[1], hand[2], hand[3], hand[4])
 	fmt.Println("Type y to keep, space to reroll:")
 	reader := bufio.NewReader(os.Stdin)
@@ -94,26 +94,4 @@ func NewHumanPlayer() *Player {
 	p := Player(hp)
 
 	return &p
-}
-
-type AIPlayer struct {
-	Scorecard
-}
-
-func (ai AIPlayer) GetName() string {
-	return "🤖"
-}
-
-func (ai AIPlayer) GetScorecard() Scorecard {
-	return ai.Scorecard
-}
-
-func (ai AIPlayer) AssessRoll(hand Hand) RollDecision {
-	// calculate a targeted scorable, given incomplete scorables and probabilites of completion
-	panic("not implemented") // TODO: Implement
-}
-
-func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
-	// Pick rarest scorable with points?
-	panic("not implemented") // TODO: Implement
 }
