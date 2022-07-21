@@ -34,7 +34,7 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 	fmt.Println(hand)
 	for _, name := range ScorableNames {
 		scorable := ScoreableByName(name)
-		if scorable == nil {
+		if scorable == nil || ai.Scorecard.NameToScorePtr(name) != nil {
 			continue
 		}
 		prob := scorable.ProbabilityToHit(hand, rollsRemaining)
@@ -56,7 +56,7 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 
 	strategy := StrategyForScorable(highestScorable)
 	if strategy == nil {
-		fmt.Println(highestScorable)
+		fmt.Println("picking a nil strategy for some reason", highestScorable)
 	}
 	decision := strategy.PickKeepers(hand)
 	fmt.Println(hand, rollsRemaining, highestScorable, decision)
@@ -74,7 +74,7 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 		}
 		score := scorable.Score(hand)
 
-		// prefer harder ones
+		// prefer harder ones, or maybe compare to best possible score
 		if score >= int(highestScore) {
 			highestScore = score
 			highestScorable = name

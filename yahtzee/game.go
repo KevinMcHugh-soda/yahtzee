@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
-	"time"
 )
 
 // TODO it's nice to have size in here ?
@@ -24,6 +23,7 @@ func (rd *RollDecision) WillKeepAll() bool {
 type Game struct {
 	Players []*Player
 	Winner  []Player
+	Seed    int64
 }
 
 func (g *Game) getRoll(hand Hand, rd RollDecision) Hand {
@@ -44,7 +44,7 @@ func rollDie() int {
 }
 
 func (g *Game) Play() {
-	rand.Seed(time.Now().Unix())
+	rand.Seed(g.Seed)
 	for idx := 0; idx < ScoreableCount; idx++ {
 		for _, plyr := range g.Players {
 			g.playTurn(*plyr)
