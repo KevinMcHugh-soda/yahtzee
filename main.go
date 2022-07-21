@@ -21,5 +21,4 @@ func main() {
 		Seed:    seed,
 	}
 	g.Play()
-
 }

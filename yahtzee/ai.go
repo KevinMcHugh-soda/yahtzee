@@ -30,7 +30,7 @@ func (ai AIPlayer) GetScorecard() *Scorecard {
 func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 	// calculate a targeted scorable, given incomplete scorables and probabilites of completion
 	highestExpectedScore := 0.0
-	var highestScorable ScorableName
+	var highestScorableName ScorableName
 	fmt.Println(hand)
 	for _, name := range ScorableNames {
 		scorable := ScoreableByName(name)
@@ -40,21 +40,24 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 		prob := scorable.ProbabilityToHit(hand, rollsRemaining)
 		best := scorable.MaxPossible()
 		// This doesn't work at all for chance, and says chance will always give you a 30 lol
+		// I put in a hack to always give a 0 probability to hit chance
 		expected := prob * float64(best)
 		fmt.Printf("	%s, %.2f, %d, %.2f\n", name, prob, best, expected)
-		if expected > highestExpectedScore {
+		if expected >= highestExpectedScore {
 			highestExpectedScore = expected
-			highestScorable = name
+			highestScorableName = name
 		}
 		// TODO if expected == score then short circuit and return all keeps
 	}
 
-	strategy := StrategyForScorable(highestScorable)
+	strategy := StrategyForScorable(highestScorableName)
+	// this seems to happen when all the unselected scorables have a 0 probability.
+	// The >= on 46 should stop it.
 	if strategy == nil {
-		fmt.Println("picking a nil strategy for some reason", highestScorable)
+		fmt.Println("picking a nil strategy for some reason", highestScorableName)
 	}
 	decision := strategy.PickKeepers(hand)
-	fmt.Println(hand, rollsRemaining, highestScorable, decision)
+	fmt.Println(hand, rollsRemaining, highestScorableName, decision)
 	return decision
 }
 
