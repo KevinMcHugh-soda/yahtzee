@@ -1,7 +1,6 @@
 package yahtzee
 
 import (
-	"fmt"
 	"math/rand"
 	"sort"
 )
@@ -24,6 +23,7 @@ type Game struct {
 	Players []*Player
 	Winner  []Player
 	Seed    int64
+	LogFn   func()
 }
 
 func (g *Game) getRoll(hand Hand, rd RollDecision) Hand {
@@ -53,7 +53,7 @@ func (g *Game) Play() {
 	topScore := 0
 	for _, plyr := range g.Players {
 		total := (*plyr).GetScorecard().Total()
-		if topScore > total {
+		if total >= topScore {
 			topScore = total
 			g.Winner = []Player{*plyr}
 		} else if topScore == total {
@@ -89,6 +89,6 @@ func score(p Player, hand Hand) {
 	scorecard := p.GetScorecard()
 
 	scorecard.Score(&hand, scorable)
-	fmt.Println(p.GetName())
-	fmt.Println(p.GetScorecard().Print())
+	// fmt.Println(p.GetName())
+	// fmt.Println(p.GetScorecard().Print())
 }
