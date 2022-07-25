@@ -14,32 +14,11 @@ import (
 func main() {
 	seed := time.Now().Unix()
 	if len(os.Args) > 1 && os.Args[1] == "mass" {
-		// If a scoremap file doesnt
-		count := 5000
-		if len(os.Args) >= 2 {
-			count, _ = strconv.Atoi(os.Args[2])
-		}
-		scores := make([]int, count)
-		for idx := 0; idx < count; idx++ {
-			seed := int64(rand.Int())
-			if idx%(count/10) == 0 {
-				fmt.Println(idx)
-			}
-			score := runGame(seed)
-			scores[idx] = score
-		}
-		scoresByDecile := make(map[int]int)
-		maxDecile := 0
-		for _, score := range scores {
-			if score/10 > maxDecile {
-				maxDecile = score / 10
-			}
-			scoresByDecile[score/10] += 1
-		}
-		for idx := 0; idx < maxDecile; idx++ {
-			fmt.Printf("%3d,%4d|%s\n", idx*10, scoresByDecile[idx], strings.Repeat("=", scoresByDecile[idx]/5))
-		}
+		runManyGames()
 		return
+		// } else if len(os.Args) > 1 && os.Args[1] == "regression" {
+		// fileName := os.Args[2]
+
 	} else if len(os.Args) > 1 {
 		fmt.Println(os.Args)
 		arg := os.Args[1]
@@ -67,4 +46,41 @@ func runGame(seed int64) int {
 	}
 	g.Play()
 	return g.Winner[0].GetScorecard().Total()
+}
+
+func runManyGames() {
+	count := 5000
+	if len(os.Args) >= 2 {
+		count, _ = strconv.Atoi(os.Args[2])
+	}
+	scores := make(map[int64]int, count)
+	for idx := 0; idx < count; idx++ {
+		seed := int64(rand.Int())
+		if idx%(count/10) == 0 {
+			fmt.Println(idx)
+		}
+		score := runGame(seed)
+		scores[seed] = score
+	}
+	scoresByDecile := make(map[int]int)
+	maxDecile := 0
+	for _, score := range scores {
+		if score/10 > maxDecile {
+			maxDecile = score / 10
+		}
+		scoresByDecile[score/10] += 1
+	}
+	for idx := 0; idx < maxDecile; idx++ {
+		fmt.Printf("%3d,%4d|%s\n", idx*10, scoresByDecile[idx], strings.Repeat("=", scoresByDecile[idx]/5))
+	}
+	f, err := os.Create(fmt.Sprintf("%d.games", time.Now().Unix()))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for idx, score := range scores {
+		str := fmt.Sprintf("%d:%d\n", idx, score)
+		f.Write([]byte(str))
+	}
 }
