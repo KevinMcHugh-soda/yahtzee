@@ -41,6 +41,7 @@ func main() {
 			newScore := runGame(int64(seed))
 			fmt.Printf("%s|%3d|%3d|%4d\n", strconv.Itoa(seed)[:5], oldScore, newScore, newScore-oldScore)
 		}
+		return
 	} else if len(os.Args) > 1 {
 		fmt.Println(os.Args)
 		arg := os.Args[1]
@@ -50,13 +51,14 @@ func main() {
 			panic(err)
 		}
 	}
-	runGame(seed)
+	score := runGame(seed)
+	fmt.Println("score was:", score)
 }
 
 func runGame(seed int64) int {
 	// defer func() {
 	// 	fmt.Println("Game over! Goodbye!")
-	// 	fmt.Printf("Seed was %d", seed)
+	// 	fmt.Printf("Seed was %d\n", seed)
 	// }()
 	// fmt.Printf("Playing a new game with seed: %d \n", seed)
 	ai := yahtzee.NewAiPlayer()
@@ -65,7 +67,9 @@ func runGame(seed int64) int {
 		Seed:    seed,
 	}
 	g.Play()
-	return g.Winner[0].GetScorecard().Total()
+	w := g.Winner[0]
+	// fmt.Println(w.GetScorecard().Print())
+	return w.GetScorecard().Total()
 }
 
 func runManyGames() {

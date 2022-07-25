@@ -1,6 +1,8 @@
 package yahtzee
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type AIPlayer struct {
 	Scorecard
@@ -80,7 +82,7 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 	}
 
 	dec := ScoreableByName(highestScorable)
-	// fmt.Printf("given %x, choosing %s \n", hand, highestScorable)
+	// fmt.Printf("given %x, choosing %s\n", hand, highestScorable)
 	return dec
 }
 
