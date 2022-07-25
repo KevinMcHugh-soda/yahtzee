@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math/rand"
 	"os"
@@ -16,9 +17,30 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "mass" {
 		runManyGames()
 		return
-		// } else if len(os.Args) > 1 && os.Args[1] == "regression" {
-		// fileName := os.Args[2]
+	} else if len(os.Args) > 1 && os.Args[1] == "regress" {
+		fileName := os.Args[2]
+		file, err := os.Open(fileName)
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
 
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			text := scanner.Text()
+			vals := strings.Split(text, ":")
+			seedStr, oldScoreStr := vals[0], vals[1]
+			seed, err := strconv.Atoi(seedStr)
+			if err != nil {
+				panic(err)
+			}
+			oldScore, err := strconv.Atoi(oldScoreStr)
+			if err != nil {
+				panic(err)
+			}
+			newScore := runGame(int64(seed))
+			fmt.Printf("%s|%3d|%3d|%4d\n", strconv.Itoa(seed)[:5], oldScore, newScore, newScore-oldScore)
+		}
 	} else if len(os.Args) > 1 {
 		fmt.Println(os.Args)
 		arg := os.Args[1]
@@ -29,8 +51,6 @@ func main() {
 		}
 	}
 	runGame(seed)
-	// TODO: build a harness to generate pair/score seeds and save them,
-	// and also to run from those seeds
 }
 
 func runGame(seed int64) int {
