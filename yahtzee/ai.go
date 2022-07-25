@@ -125,7 +125,6 @@ type FaceValueStrategy struct{ keptNumber int }
 func (s FaceValueStrategy) PickKeepers(hand Hand) RollDecision {
 	keep := make([]bool, 5)
 	for idx, die := range hand {
-		// lol - so if the target is Ones and the Hand is [2,2,2,3,5] this will hold the 2s lol
 		if die == s.keptNumber {
 			keep[idx] = true
 		}
