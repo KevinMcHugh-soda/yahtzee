@@ -26,6 +26,8 @@ func main() {
 		defer file.Close()
 
 		scanner := bufio.NewScanner(file)
+		oldScores := make([]int, 0)
+		newScores := make([]int, 0)
 		for scanner.Scan() {
 			text := scanner.Text()
 			vals := strings.Split(text, ":")
@@ -39,8 +41,15 @@ func main() {
 				panic(err)
 			}
 			newScore := runGame(int64(seed))
+			oldScores = append(oldScores, oldScore)
+			newScores = append(newScores, newScore)
 			fmt.Printf("%s|%3d|%3d|%4d\n", strconv.Itoa(seed)[:5], oldScore, newScore, newScore-oldScore)
 		}
+		fmt.Println("OLD SCORES:")
+		printHistogram(oldScores)
+		fmt.Println("---------------------------------------------------------------------------------------------------")
+		fmt.Println("NEW SCORES:")
+		printHistogram(newScores)
 		return
 	} else if len(os.Args) > 1 {
 		fmt.Println(os.Args)
@@ -86,6 +95,26 @@ func runManyGames() {
 		score := runGame(seed)
 		scores[seed] = score
 	}
+
+	vals := make([]int, 0, 1000)
+	for _, score := range scores {
+		vals = append(vals, score)
+	}
+	printHistogram(vals)
+
+	f, err := os.Create(fmt.Sprintf("%d.games", time.Now().Unix()))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for idx, score := range scores {
+		str := fmt.Sprintf("%d:%d\n", idx, score)
+		f.Write([]byte(str))
+	}
+}
+
+func printHistogram(scores []int) {
 	scoresByDecile := make(map[int]int)
 	maxDecile := 0
 	for _, score := range scores {
@@ -96,15 +125,5 @@ func runManyGames() {
 	}
 	for idx := 0; idx < maxDecile; idx++ {
 		fmt.Printf("%3d,%4d|%s\n", idx*10, scoresByDecile[idx], strings.Repeat("=", scoresByDecile[idx]/5))
-	}
-	f, err := os.Create(fmt.Sprintf("%d.games", time.Now().Unix()))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	for idx, score := range scores {
-		str := fmt.Sprintf("%d:%d\n", idx, score)
-		f.Write([]byte(str))
 	}
 }
