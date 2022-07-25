@@ -84,13 +84,24 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 	return dec
 }
 
+func NewFaceValueStrategy(name ScorableName) ScorableVarietyStrategy {
+	namesToNumbers := map[ScorableName]int{
+		OnesName:   1,
+		TwosName:   2,
+		ThreesName: 3,
+		FoursName:  4,
+		FivesName:  5,
+		SixesName:  6,
+	}
+	return FaceValueStrategy{namesToNumbers[name]}
+}
+
 func StrategyForScorable(name ScorableName) ScorableVarietyStrategy {
 	variety := name.VarietyOfScorable()
 	// TODO: we can probably get rid of the ScorableVariety type honestly.
 	strategyMap := map[ScorableVariety]ScorableVarietyStrategy{
-		FaceValueVariety: FaceValueStrategy{},
+		FaceValueVariety: NewFaceValueStrategy(name),
 		// TODO: Build a strategy for each ScorableVariety:
-		// FaceValueStrategy keeps whichever value we have most of
 		// OfAKindStrategy is similar but might prefer 4,4,4,4,6 over trying for 4,4,4,4,4?
 		// StraightStrategy keeps one of each (eventually handle the 1/6 thing)
 		// FullHouseStrategy is a bespoke little snowflake
@@ -107,22 +118,13 @@ type ScorableVarietyStrategy interface {
 	PickKeepers(hand Hand) RollDecision
 }
 
-type FaceValueStrategy struct{}
+type FaceValueStrategy struct{ keptNumber int }
 
 func (s FaceValueStrategy) PickKeepers(hand Hand) RollDecision {
 	keep := make([]bool, 5)
-	counts := valueCounts(hand)
-	mostPresentValue, mostPresentCount := -1, 0
-	for idx, count := range counts {
-		if count > mostPresentCount {
-			mostPresentValue = idx
-			mostPresentCount = count
-		}
-	}
-
 	for idx, die := range hand {
 		// lol - so if the target is Ones and the Hand is [2,2,2,3,5] this will hold the 2s lol
-		if die == mostPresentValue {
+		if die == s.keptNumber {
 			keep[idx] = true
 		}
 
