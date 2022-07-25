@@ -107,7 +107,7 @@ func StrategyForScorable(name ScorableName) ScorableVarietyStrategy {
 		// OfAKindStrategy is similar but might prefer 4,4,4,4,6 over trying for 4,4,4,4,4?
 		// StraightStrategy keeps one of each (eventually handle the 1/6 thing)
 		// FullHouseStrategy is a bespoke little snowflake
-		OfAKindVariety:   FaceValueStrategy{},
+		OfAKindVariety:   OfAKindValueStrategy{},
 		FullHouseVariety: FaceValueStrategy{},
 		StraightVariety:  StraightStrategy{},
 		ChanceVariety:    FaceValueStrategy{},
@@ -126,6 +126,29 @@ func (s FaceValueStrategy) PickKeepers(hand Hand) RollDecision {
 	keep := make([]bool, 5)
 	for idx, die := range hand {
 		if die == s.keptNumber {
+			keep[idx] = true
+		}
+
+	}
+
+	return RollDecision(keep)
+}
+
+type OfAKindValueStrategy struct{}
+
+func (s OfAKindValueStrategy) PickKeepers(hand Hand) RollDecision {
+	keep := make([]bool, 5)
+	counts := valueCounts(hand)
+	mostPresentValue, mostPresentCount := 1, 0
+	for idx, count := range counts {
+		if count > mostPresentCount {
+			mostPresentValue = idx
+			mostPresentCount = count
+		}
+	}
+
+	for idx, die := range hand {
+		if die == mostPresentValue {
 			keep[idx] = true
 		}
 
