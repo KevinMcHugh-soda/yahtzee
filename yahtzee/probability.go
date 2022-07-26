@@ -1,7 +1,5 @@
 package yahtzee
 
-import "math"
-
 // This lies, kind of. It returns the greater probability to hit of the small or large straight
 func (ls LargeStraight) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	coveredVals := valueCounts(hand)
@@ -32,38 +30,32 @@ func (ss SmallStraight) ProbabilityToHit(hand Hand, rollsRemaining int) float64 
 
 func (s Ones) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 1 - counts[1]
-	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
+	return float64(counts[1]) / float64(5)
 }
 
 func (s Twos) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 1 - counts[2]
-	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
+	return float64(counts[2]) / float64(5)
 }
 
 func (s Threes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 1 - counts[3]
-	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
+	return float64(counts[3]) / float64(5)
 }
 
 func (s Fours) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 1 - counts[4]
-	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
+	return float64(counts[4]) / float64(5)
 }
 
 func (s Fives) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 1 - counts[5]
-	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
+	return float64(counts[5]) / float64(5)
 }
 
 func (s Sixes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 1 - counts[6]
-	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
+	return float64(counts[6]) / float64(5)
 }
 
 func (s ThreeOfAKind) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
