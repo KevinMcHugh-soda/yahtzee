@@ -154,8 +154,15 @@ func printComparativeHistogram(oldScores, newScores []int) {
 			highestCount = newCount
 		}
 	}
-
-	width := 193
+	wArg := os.Getenv("WIDTH")
+	width := 121
+	if len(wArg) > 0 {
+		var err error
+		width, err = strconv.Atoi(wArg)
+		if err != nil {
+			panic(err)
+		}
+	}
 	// "%3d|(%3d)%s|%s(%3d)\n"
 	usableForHistogram := width - 3 - 1 - 1 - 3 - 1 - 1 - 1 - 3 - 1
 	if usableForHistogram < 1 {
