@@ -154,15 +154,8 @@ func printComparativeHistogram(oldScores, newScores []int) {
 			highestCount = newCount
 		}
 	}
-	wArg := os.Getenv("WIDTH")
-	width := 121
-	if len(wArg) > 0 {
-		var err error
-		width, err = strconv.Atoi(wArg)
-		if err != nil {
-			panic(err)
-		}
-	}
+	width := intFromEnvVarOr("WIDTH", 121)
+
 	// "%3d|(%3d)%s|%s(%3d)\n"
 	usableForHistogram := width - 3 - 1 - 1 - 3 - 1 - 1 - 1 - 3 - 1
 	if usableForHistogram < 1 {
@@ -186,4 +179,18 @@ func printComparativeHistogram(oldScores, newScores []int) {
 		newScoreString := fmt.Sprintf("%s%-*s%s", colorGreen, paddingNeeded, strings.Repeat("=", int(float64(newScoreCount)/scalingFactor)), colorReset)
 		fmt.Printf("%3d|(%3d)%s|%s(%3d)\n", idx*10, oldScoreCount, oldScoreString, newScoreString, newScoreCount)
 	}
+}
+
+func intFromEnvVarOr(varName string, def int) int {
+	valStr := os.Getenv(varName)
+	val := def
+	if len(valStr) > 0 {
+		var err error
+		val, err = strconv.Atoi(valStr)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return val
 }
