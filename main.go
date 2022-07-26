@@ -166,12 +166,17 @@ func printComparativeHistogram(oldScores, newScores []int) {
 	if scalingFactor == 0 {
 		scalingFactor = 1
 	}
+	colorReset := "\033[0m"
+
+	colorRed := "\033[31m"
+	colorGreen := "\033[32m"
+
 	for idx := 0; idx < maxDecile; idx++ {
 		oldScoreCount := oldScoresByDecile[idx]
 		newScoreCount := newScoresByDecile[idx]
-		oldScoreString := strings.Repeat("=", int(float64(oldScoreCount)/scalingFactor))
-		newScoreString := strings.Repeat("=", int(float64(newScoreCount)/scalingFactor))
 		paddingNeeded := (usableForHistogram / 2) + 5
-		fmt.Printf("%3d|(%3d)%*s|%-*s(%3d)\n", idx*10, oldScoreCount, paddingNeeded, oldScoreString, paddingNeeded, newScoreString, newScoreCount)
+		oldScoreString := fmt.Sprintf("%s%*s%s", colorRed, paddingNeeded, strings.Repeat("=", int(float64(oldScoreCount)/scalingFactor)), colorReset)
+		newScoreString := fmt.Sprintf("%s%-*s%s", colorGreen, paddingNeeded, strings.Repeat("=", int(float64(newScoreCount)/scalingFactor)), colorReset)
+		fmt.Printf("%3d|(%3d)%s|%s(%3d)\n", idx*10, oldScoreCount, oldScoreString, newScoreString, newScoreCount)
 	}
 }
