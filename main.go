@@ -43,7 +43,10 @@ func main() {
 			newScore, _ := runGame(int64(seed))
 			oldScores = append(oldScores, oldScore)
 			newScores = append(newScores, newScore)
-			fmt.Printf("%s|%3d|%3d|%4d\n", strconv.Itoa(seed)[:5], oldScore, newScore, newScore-oldScore)
+			if len(seedStr) > 5 {
+				seedStr = seedStr[:5]
+			}
+			fmt.Printf("%s|%3d|%3d|%4d\n", seedStr, oldScore, newScore, newScore-oldScore)
 		}
 		fmt.Println("---------------------------------------------------------------------------------------------------")
 		printComparativeHistogram(oldScores, newScores)
