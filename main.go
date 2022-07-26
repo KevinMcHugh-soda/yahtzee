@@ -45,11 +45,8 @@ func main() {
 			newScores = append(newScores, newScore)
 			fmt.Printf("%s|%3d|%3d|%4d\n", strconv.Itoa(seed)[:5], oldScore, newScore, newScore-oldScore)
 		}
-		fmt.Println("OLD SCORES:")
-		printHistogram(oldScores)
 		fmt.Println("---------------------------------------------------------------------------------------------------")
-		fmt.Println("NEW SCORES:")
-		printHistogram(newScores)
+		printComparativeHistogram(oldScores, newScores)
 		return
 	} else if len(os.Args) > 1 {
 		fmt.Println(os.Args)
@@ -125,5 +122,56 @@ func printHistogram(scores []int) {
 	}
 	for idx := 0; idx < maxDecile; idx++ {
 		fmt.Printf("%3d,%4d|%s\n", idx*10, scoresByDecile[idx], strings.Repeat("=", scoresByDecile[idx]/5))
+	}
+}
+
+func printComparativeHistogram(oldScores, newScores []int) {
+	oldScoresByDecile := make(map[int]int)
+	newScoresByDecile := make(map[int]int)
+	maxDecile := 0
+
+	for idx, oldScore := range oldScores {
+		newScore := newScores[idx]
+
+		if oldScore/10 > maxDecile {
+			maxDecile = oldScore / 10
+		}
+		if newScore/10 > maxDecile {
+			maxDecile = newScore / 10
+		}
+
+		oldScoresByDecile[oldScore/10] += 1
+		newScoresByDecile[newScore/10] += 1
+	}
+	highestCount := 0
+	for decile, oldCount := range oldScoresByDecile {
+		newCount := newScoresByDecile[decile]
+
+		if oldCount > highestCount {
+			highestCount = oldCount
+		}
+		if newCount > highestCount {
+			highestCount = newCount
+		}
+	}
+
+	width := 193
+	// "%3d|(%3d)%s|%s(%3d)\n"
+	usableForHistogram := width - 3 - 1 - 1 - 3 - 1 - 1 - 1 - 3 - 1
+	if usableForHistogram < 1 {
+		panic("Width must be at least 16")
+	}
+	scalingFactor := 2 * float64(highestCount) / float64(usableForHistogram)
+	fmt.Println("usable for histogram", usableForHistogram, "highest count", highestCount, "scaling factor", scalingFactor)
+	if scalingFactor == 0 {
+		scalingFactor = 1
+	}
+	for idx := 0; idx < maxDecile; idx++ {
+		oldScoreCount := oldScoresByDecile[idx]
+		newScoreCount := newScoresByDecile[idx]
+		oldScoreString := strings.Repeat("=", int(float64(oldScoreCount)/scalingFactor))
+		newScoreString := strings.Repeat("=", int(float64(newScoreCount)/scalingFactor))
+		paddingNeeded := (usableForHistogram / 2) + 5
+		fmt.Printf("%3d|(%3d)%*s|%-*s(%3d)\n", idx*10, oldScoreCount, paddingNeeded, oldScoreString, paddingNeeded, newScoreString, newScoreCount)
 	}
 }
