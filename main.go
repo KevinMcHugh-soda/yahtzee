@@ -24,7 +24,7 @@ func main() {
 			panic(err)
 		}
 		defer file.Close()
-
+		deltas := make([]int, 0, 1000)
 		scanner := bufio.NewScanner(file)
 		oldScores := make([]int, 0)
 		newScores := make([]int, 0)
@@ -47,7 +47,13 @@ func main() {
 				seedStr = seedStr[:5]
 			}
 			fmt.Printf("%s|%3d|%3d|%4d\n", seedStr, oldScore, newScore, newScore-oldScore)
+			deltas = append(deltas, newScore-oldScore)
 		}
+		sum := 0.0
+		for _, d := range deltas {
+			sum += float64(d)
+		}
+		fmt.Println("delta:", sum/float64(len(deltas)))
 		fmt.Println("---------------------------------------------------------------------------------------------------")
 		printComparativeHistogram(oldScores, newScores)
 		return
