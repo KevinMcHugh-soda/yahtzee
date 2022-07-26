@@ -40,7 +40,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			newScore := runGame(int64(seed))
+			newScore, _ := runGame(int64(seed))
 			oldScores = append(oldScores, oldScore)
 			newScores = append(newScores, newScore)
 			fmt.Printf("%s|%3d|%3d|%4d\n", strconv.Itoa(seed)[:5], oldScore, newScore, newScore-oldScore)
@@ -57,11 +57,11 @@ func main() {
 			panic(err)
 		}
 	}
-	score := runGame(seed)
-	fmt.Println("score was:", score)
+	_, g := runGame(seed)
+	fmt.Println(g.Winner[0].GetScorecard().Print())
 }
 
-func runGame(seed int64) int {
+func runGame(seed int64) (int, yahtzee.Game) {
 	// defer func() {
 	// 	fmt.Println("Game over! Goodbye!")
 	// 	fmt.Printf("Seed was %d\n", seed)
@@ -75,7 +75,7 @@ func runGame(seed int64) int {
 	g.Play()
 	w := g.Winner[0]
 	// fmt.Println(w.GetScorecard().Print())
-	return w.GetScorecard().Total()
+	return w.GetScorecard().Total(), g
 }
 
 func runManyGames() {
@@ -89,7 +89,7 @@ func runManyGames() {
 		if idx%(count/10) == 0 {
 			fmt.Println(idx)
 		}
-		score := runGame(seed)
+		score, _ := runGame(seed)
 		scores[seed] = score
 	}
 
