@@ -32,37 +32,37 @@ func (ss SmallStraight) ProbabilityToHit(hand Hand, rollsRemaining int) float64 
 
 func (s Ones) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 5 - counts[1]
+	missing := 1 - counts[1]
 	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
 func (s Twos) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 5 - counts[2]
+	missing := 1 - counts[2]
 	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
 func (s Threes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 5 - counts[3]
+	missing := 1 - counts[3]
 	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
 func (s Fours) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 5 - counts[4]
+	missing := 1 - counts[4]
 	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
 func (s Fives) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 5 - counts[5]
+	missing := 1 - counts[5]
 	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
 func (s Sixes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	missing := 5 - counts[6]
+	missing := 1 - counts[6]
 	return math.Pow(float64(rollsRemaining)/6.0, float64(missing))
 }
 
