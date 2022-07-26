@@ -104,7 +104,6 @@ func StrategyForScorable(name ScorableName) ScorableVarietyStrategy {
 	strategyMap := map[ScorableVariety]ScorableVarietyStrategy{
 		FaceValueVariety: NewFaceValueStrategy(name),
 		// TODO: Build a strategy for each ScorableVariety:
-		// OfAKindStrategy is similar but might prefer 4,4,4,4,6 over trying for 4,4,4,4,4?
 		// StraightStrategy keeps one of each (eventually handle the 1/6 thing)
 		// FullHouseStrategy is a bespoke little snowflake
 		OfAKindVariety:   OfAKindValueStrategy{},
@@ -162,6 +161,7 @@ type StraightStrategy struct{}
 func (s StraightStrategy) PickKeepers(hand Hand) RollDecision {
 	keep := make([]bool, 5)
 	// this is going to be wrong - it will keep both 1 and 6, but:
+	// also wrong for small straight
 	last := 0
 	for idx, cur := range hand {
 		if last != cur {
