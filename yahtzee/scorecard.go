@@ -127,8 +127,14 @@ func (s *Scorecard) NameToScorePtr(name ScorableName) *int {
 	return nameToPtr[name]
 }
 
+func (s *Scorecard) HadYahztee() bool {
+	yahtzeeScore := s.NameToScorePtr(YahtzeeName)
+	return *yahtzeeScore != 0
+}
+
 func (s *Scorecard) Score(hand *Hand, scoreable Scoreable) int {
-	sc := scoreable.Score(*hand)
+	sc := scoreable.Score(*hand, s.HadYahztee())
+
 	score := &sc
 	s.scoreYahtzeeBonus(*hand)
 	m := *s

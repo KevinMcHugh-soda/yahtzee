@@ -72,7 +72,7 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 		if scorable == nil || ai.Scorecard.NameToScorePtr(name) != nil {
 			continue
 		}
-		score := scorable.Score(hand)
+		score := scorable.Score(hand, ai.Scorecard.HadYahztee())
 
 		// prefer harder ones, or maybe compare to best possible score
 		if score >= int(highestScore) {

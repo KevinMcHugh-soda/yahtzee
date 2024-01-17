@@ -1,12 +1,12 @@
 package yahtzee
 
-//If we add more categories, increment this? yuck
+// If we add more categories, increment this? yuck
 const ScoreableCount = 13
 
 type Hand [5]int
 
 type Scoreable interface {
-	Score(hand Hand) int
+	Score(hand Hand, hadYahtzee bool) int
 	MaxPossible() int
 	ProbabilityToHit(hand Hand, rollsRemaining int) float64
 }
@@ -26,29 +26,29 @@ type Chance struct{}
 type Yahtzee struct{}
 type ErrorScore struct{}
 
-func (s ErrorScore) Score(hand Hand) int {
+func (s ErrorScore) Score(hand Hand, hadYahtzee bool) int {
 	return 0
 }
 
-func (s Ones) Score(hand Hand) int {
+func (s Ones) Score(hand Hand, hadYahtzee bool) int {
 	return scoreFaceValues(hand, 1)
 }
-func (s Twos) Score(hand Hand) int {
+func (s Twos) Score(hand Hand, hadYahtzee bool) int {
 	return scoreFaceValues(hand, 2)
 }
-func (s Threes) Score(hand Hand) int {
+func (s Threes) Score(hand Hand, hadYahtzee bool) int {
 	return scoreFaceValues(hand, 3)
 }
-func (s Fours) Score(hand Hand) int {
+func (s Fours) Score(hand Hand, hadYahtzee bool) int {
 	return scoreFaceValues(hand, 4)
 }
-func (s Fives) Score(hand Hand) int {
+func (s Fives) Score(hand Hand, hadYahtzee bool) int {
 	return scoreFaceValues(hand, 5)
 }
-func (s Sixes) Score(hand Hand) int {
+func (s Sixes) Score(hand Hand, hadYahtzee bool) int {
 	return scoreFaceValues(hand, 6)
 }
-func (s ThreeOfAKind) Score(hand Hand) int {
+func (s ThreeOfAKind) Score(hand Hand, hadYahtzee bool) int {
 	scoring := false
 	for _, count := range valueCounts(hand) {
 		if count >= 3 {
@@ -64,7 +64,7 @@ func (s ThreeOfAKind) Score(hand Hand) int {
 	}
 	return 0
 }
-func (s FourOfAKind) Score(hand Hand) int {
+func (s FourOfAKind) Score(hand Hand, hadYahtzee bool) int {
 	scoring := false
 	for _, count := range valueCounts(hand) {
 		if count >= 4 {
@@ -80,7 +80,11 @@ func (s FourOfAKind) Score(hand Hand) int {
 	}
 	return 0
 }
-func (s FullHouse) Score(hand Hand) int {
+func (s FullHouse) Score(hand Hand, hadYahtzee bool) int {
+	if isJoker(hand, hadYahtzee) {
+		return 25
+	}
+
 	hasTwo, hasThree := false, false
 	for _, count := range valueCounts(hand) {
 		if count == 2 {
@@ -98,7 +102,11 @@ func (s FullHouse) Score(hand Hand) int {
 	}
 	return 0
 }
-func (s SmallStraight) Score(hand Hand) int {
+
+func (s SmallStraight) Score(hand Hand, hadYahtzee bool) int {
+	if isJoker(hand, hadYahtzee) {
+		return 30
+	}
 	valueCounts := valueCounts(hand)
 
 	scoring := (valueCounts[3] >= 1 && valueCounts[4] >= 1) &&
@@ -110,7 +118,10 @@ func (s SmallStraight) Score(hand Hand) int {
 	}
 	return 0
 }
-func (s LargeStraight) Score(hand Hand) int {
+func (s LargeStraight) Score(hand Hand, hadYahtzee bool) int {
+	if isJoker(hand, hadYahtzee) {
+		return 40
+	}
 	valueCounts := valueCounts(hand)
 
 	scoring := (valueCounts[2] == 1 && valueCounts[3] == 1 && valueCounts[4] == 1 && valueCounts[5] == 1) && ((valueCounts[1] == 1) || (valueCounts[6] == 1))
@@ -119,21 +130,16 @@ func (s LargeStraight) Score(hand Hand) int {
 	}
 	return 0
 }
-func (s Chance) Score(hand Hand) int {
+func (s Chance) Score(hand Hand, hadYahtzee bool) int {
 	score := 0
 	for _, value := range hand {
 		score = score + value
 	}
 	return score
 }
-func (s Yahtzee) Score(hand Hand) int {
-	scoring := false
-	for _, count := range valueCounts(hand) {
-		if count == 5 {
-			scoring = true
-		}
-	}
-	if scoring {
+
+func (s Yahtzee) Score(hand Hand, hadYahtzee bool) int {
+	if isYahtzee(hand) {
 		return 50
 	}
 	return 0
@@ -147,6 +153,7 @@ func valueCounts(hand Hand) map[int]int {
 	}
 	return valueCounts
 }
+
 func scoreFaceValues(hand Hand, value int) int {
 	foundValue := 0
 	for _, die := range hand {
@@ -155,4 +162,18 @@ func scoreFaceValues(hand Hand, value int) int {
 		}
 	}
 	return foundValue
+}
+
+func isYahtzee(hand Hand) bool {
+	for _, count := range valueCounts(hand) {
+		if count == 5 {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isJoker(hand Hand, hadYahztee bool) bool {
+	return isYahtzee(hand) && hadYahztee
 }

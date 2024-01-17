@@ -67,7 +67,7 @@ func (p HumanPlayer) PickScorable(hand Hand) Scoreable {
 	for idx, name := range ScorableNames {
 		if p.Scorecard.NameToScorePtr(name) == nil {
 			options[idx+1] = name
-			score := ScoreableByName(name).Score(hand)
+			score := ScoreableByName(name).Score(hand, p.Scorecard.HadYahztee())
 			promptForName[name] = fmt.Sprintf("(%2d points) [%d] to score %s;", score, idx+1, name)
 		}
 	}
