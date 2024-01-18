@@ -41,10 +41,17 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 		}
 		prob := scorable.ProbabilityToHit(hand, rollsRemaining)
 		best := scorable.MaxPossible()
-		// This doesn't work at all for chance, and says chance will always give you a 30 lol
-		// I put in a hack to always give a 0 probability to hit chance
+
 		expected := prob * float64(best)
-		// fmt.Printf("	%s, %.2f, %d, %.2f\n", name, prob, best, expected)
+		if name == LargeStraightName && prob < 1.0 {
+			expected -= 10
+		}
+		if name.VarietyOfScorable() == FaceValueVariety {
+			if prob > 1.0 { // I cheated probability and called it out of 3, to prioritize bonus
+				expected += 10
+			}
+		}
+		fmt.Printf("	%s, %.2f, %d, %.2f\n", name, prob, best, expected)
 		if expected >= highestExpectedScore {
 			highestExpectedScore = expected
 			highestScorableName = name
@@ -63,7 +70,7 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 		fmt.Println("picking a nil strategy for some reason", highestScorableName)
 	}
 	decision := strategy.PickKeepers(hand)
-	// fmt.Println(hand, rollsRemaining, highestScorableName, decision)
+	fmt.Printf("roll: %v; hand: %d; chasing: %s; holding: %v\n", hand, rollsRemaining, highestScorableName, decision)
 	return decision
 }
 
@@ -77,7 +84,11 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 			continue
 		}
 		score := scorable.Score(hand, ai.Scorecard.HadYahztee())
-
+		if name.VarietyOfScorable() == FaceValueVariety {
+			if scorable.ProbabilityToHit(hand, 0) > 1.0 { // I cheated probability and called it out of 3, to prioritize bonus
+				highestScore += 10
+			}
+		}
 		// prefer harder ones, or maybe compare to best possible score
 		if score >= int(highestScore) {
 			highestScore = score
