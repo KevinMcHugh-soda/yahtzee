@@ -31,8 +31,8 @@ func (ai AIPlayer) GetScorecard() *Scorecard {
 // TODO should be bonus-aware
 func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 	// calculate a targeted scorable, given incomplete scorables and probabilites of completion
-	highestExpectedScore := 0.0
-	var highestScorableName ScorableName
+	bestProportion := 0.0
+	var bestScorableName ScorableName
 	// fmt.Println(hand)
 	for _, name := range ScorableNames {
 		scorable := ScoreableByName(name)
@@ -40,37 +40,39 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 			continue
 		}
 		prob := scorable.ProbabilityToHit(hand, rollsRemaining)
-		best := scorable.MaxPossible()
+		max := scorable.MaxPossible()
 
-		expected := prob * float64(best)
+		expected := prob * float64(max)
+		proportion := expected / float64(max)
 		if name == LargeStraightName && prob < 1.0 {
-			expected -= 10
+			// arbitrary but decent
+			proportion -= 0.5
 		}
-		if name.VarietyOfScorable() == FaceValueVariety {
-			if prob > 1.0 { // I cheated probability and called it out of 3, to prioritize bonus
-				expected += 10
-			}
-		}
-		fmt.Printf("	%s, %.2f, %d, %.2f\n", name, prob, best, expected)
-		if expected >= highestExpectedScore {
-			highestExpectedScore = expected
-			highestScorableName = name
+		// if name.VarietyOfScorable() == FaceValueVariety {
+		// 	if prob > 1.0 { // I cheated probability and called it out of 3, to prioritize bonus
+		// 		expected += 10
+		// 	}
+		// }
+		fmt.Printf("	%s, %.2f, %d, %.2f\n", name, prob, max, proportion)
+		if proportion >= bestProportion {
+			bestProportion = proportion
+			bestScorableName = name
 		}
 		// TODO if expected == score then short circuit and return all keeps
 	}
 
-	if highestScorableName == "" {
-		highestScorableName = ChanceName
+	if bestScorableName == "" {
+		bestScorableName = ChanceName
 	}
 
-	strategy := StrategyForScorable(highestScorableName)
+	strategy := StrategyForScorable(bestScorableName)
 	// this seems to happen when all the unselected scorables have a 0 probability.
 	// The >= on 46 should stop it.
 	if strategy == nil {
-		fmt.Println("picking a nil strategy for some reason", highestScorableName)
+		fmt.Println("picking a nil strategy for some reason", bestScorableName)
 	}
 	decision := strategy.PickKeepers(hand)
-	fmt.Printf("roll: %v; hand: %d; chasing: %s; holding: %v\n", hand, rollsRemaining, highestScorableName, decision)
+	fmt.Printf("roll: %v; hand: %d; chasing: %s; holding: %v\n", hand, rollsRemaining, bestScorableName, decision)
 	return decision
 }
 
