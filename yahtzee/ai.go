@@ -36,7 +36,7 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 	// fmt.Println(hand)
 	for _, name := range ScorableNames {
 		scorable := ScoreableByName(name)
-		if scorable == nil || ai.Scorecard.NameToScorePtr(name) != nil {
+		if scorable == nil || ai.Scorecard.NameToScorePtr(name) != nil || name == ChanceName {
 			continue
 		}
 		prob := scorable.ProbabilityToHit(hand, rollsRemaining)
@@ -50,6 +50,10 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 			highestScorableName = name
 		}
 		// TODO if expected == score then short circuit and return all keeps
+	}
+
+	if highestScorableName == "" {
+		highestScorableName = ChanceName
 	}
 
 	strategy := StrategyForScorable(highestScorableName)
@@ -69,7 +73,7 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 	for _, name := range ScorableNames {
 		scorable := ScoreableByName(name)
 		// TODO maybe a NullScorable?
-		if scorable == nil || ai.Scorecard.NameToScorePtr(name) != nil {
+		if scorable == nil || ai.Scorecard.NameToScorePtr(name) != nil || name == ChanceName {
 			continue
 		}
 		score := scorable.Score(hand, ai.Scorecard.HadYahztee())
@@ -79,6 +83,11 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 			highestScore = score
 			highestScorable = name
 		}
+	}
+
+	// We didn't find anything worth scoring, throw it in Chance.
+	if highestScorable == "" {
+		highestScorable = ChanceName
 	}
 
 	dec := ScoreableByName(highestScorable)

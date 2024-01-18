@@ -129,7 +129,7 @@ func (s *Scorecard) NameToScorePtr(name ScorableName) *int {
 
 func (s *Scorecard) HadYahztee() bool {
 	yahtzeeScore := s.NameToScorePtr(YahtzeeName)
-	return *yahtzeeScore != 0
+	return yahtzeeScore != nil && *yahtzeeScore != 0
 }
 
 func (s *Scorecard) Score(hand *Hand, scoreable Scoreable) int {
