@@ -1,6 +1,7 @@
 package yahtzee
 
 import (
+	"fmt"
 	"math/rand"
 	"sort"
 )
@@ -89,6 +90,6 @@ func score(p Player, hand Hand) {
 	scorecard := p.GetScorecard()
 
 	scorecard.Score(&hand, scorable)
-	// fmt.Println(p.GetName())
-	// fmt.Println(p.GetScorecard().Print())
+	fmt.Println(p.GetName())
+	fmt.Println(p.GetScorecard().Print())
 }

@@ -48,11 +48,11 @@ func (ai AIPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 			// arbitrary but decent
 			proportion -= 0.5
 		}
-		// if name.VarietyOfScorable() == FaceValueVariety {
-		// 	if prob > 1.0 { // I cheated probability and called it out of 3, to prioritize bonus
-		// 		expected += 10
-		// 	}
-		// }
+		if name.VarietyOfScorable() == FaceValueVariety {
+			if prob >= 1.0 { // I cheated probability and called it out of 3, to prioritize bonus
+				proportion += 0.25
+			}
+		}
 		fmt.Printf("	%s, %.2f, %d, %.2f\n", name, prob, max, proportion)
 		if proportion >= bestProportion {
 			bestProportion = proportion
@@ -88,7 +88,7 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 		score := scorable.Score(hand, ai.Scorecard.HadYahztee())
 		if name.VarietyOfScorable() == FaceValueVariety {
 			if scorable.ProbabilityToHit(hand, 0) > 1.0 { // I cheated probability and called it out of 3, to prioritize bonus
-				highestScore += 10
+				score += 10
 			}
 		}
 		// prefer harder ones, or maybe compare to best possible score
@@ -104,7 +104,9 @@ func (ai AIPlayer) PickScorable(hand Hand) Scoreable {
 	}
 
 	dec := ScoreableByName(highestScorable)
-	// fmt.Printf("given %x, choosing %s\n", hand, highestScorable)
+	fmt.Printf("given %x, choosing %s\n", hand, highestScorable)
+	// fmt.Println(hand, "-", highestScorable)
+
 	return dec
 }
 
@@ -131,7 +133,7 @@ func StrategyForScorable(name ScorableName) ScorableVarietyStrategy {
 		OfAKindVariety:   OfAKindValueStrategy{},
 		FullHouseVariety: FaceValueStrategy{},
 		StraightVariety:  StraightStrategy{},
-		ChanceVariety:    FaceValueStrategy{},
+		ChanceVariety:    OfAKindValueStrategy{},
 	}
 
 	return strategyMap[variety]
@@ -162,7 +164,7 @@ func (s OfAKindValueStrategy) PickKeepers(hand Hand) RollDecision {
 	counts := valueCounts(hand)
 	mostPresentValue, mostPresentCount := 1, 0
 	for idx, count := range counts {
-		if count > mostPresentCount {
+		if count >= mostPresentCount {
 			mostPresentValue = idx
 			mostPresentCount = count
 		}

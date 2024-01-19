@@ -31,32 +31,32 @@ func (ss SmallStraight) ProbabilityToHit(hand Hand, rollsRemaining int) float64 
 
 func (s Ones) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	return float64(counts[1]) / float64(5)
+	return float64(counts[1]) / float64(3)
 }
 
 func (s Twos) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	return float64(counts[2]) / float64(5)
+	return float64(counts[2]) / float64(3)
 }
 
 func (s Threes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	return float64(counts[3]) / float64(5)
+	return float64(counts[3]) / float64(3)
 }
 
 func (s Fours) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	return float64(counts[4]) / float64(5)
+	return float64(counts[4]) / float64(3)
 }
 
 func (s Fives) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	return float64(counts[5]) / float64(5)
+	return float64(counts[5]) / float64(3)
 }
 
 func (s Sixes) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {
 	counts := valueCounts(hand)
-	return float64(counts[6]) / float64(5)
+	return float64(counts[6]) / float64(3)
 }
 
 func (s ThreeOfAKind) ProbabilityToHit(hand Hand, rollsRemaining int) float64 {

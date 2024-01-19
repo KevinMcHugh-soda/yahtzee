@@ -71,19 +71,23 @@ func main() {
 }
 
 func runGame(seed int64) (int, yahtzee.Game) {
-	// defer func() {
-	// 	fmt.Println("Game over! Goodbye!")
-	// 	fmt.Printf("Seed was %d\n", seed)
-	// }()
-	// fmt.Printf("Playing a new game with seed: %d \n", seed)
-	ai := yahtzee.NewAiPlayer()
+	defer func() {
+		fmt.Println("Game over! Goodbye!")
+		fmt.Printf("Seed was %d\n", seed)
+	}()
+	fmt.Printf("Playing a new game with seed: %d \n", seed)
+	// ai := yahtzee.NewAiPlayer()
+	me := yahtzee.NewHumanPlayer()
 	g := yahtzee.Game{
-		Players: []*yahtzee.Player{ai},
-		Seed:    seed,
+		Players: []*yahtzee.Player{
+			me,
+			// ai,
+		},
+		Seed: seed,
 	}
 	g.Play()
 	w := g.Winner[0]
-	// fmt.Println(w.GetScorecard().Print())
+	fmt.Println(w.GetScorecard().Print())
 	return w.GetScorecard().Total(), g
 }
 
