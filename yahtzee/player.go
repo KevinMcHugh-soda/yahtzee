@@ -42,7 +42,7 @@ OUTER:
 	for {
 		fmt.Println("please enter the values you want to keep.")
 		text, _ = reader.ReadString('\n')
-		if !allInts.MatchString(text) {
+		if text != "\n" && !allInts.MatchString(text) {
 			fmt.Println("only enter numbers between 1 and 6")
 			continue OUTER
 		}
