@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -30,15 +31,58 @@ func (p HumanPlayer) GetScorecard() *Scorecard {
 // TODO would be good to indicate roll no./rolls remaining
 func (p HumanPlayer) AssessRoll(hand Hand, rollsRemaining int) RollDecision {
 	fmt.Printf("Roll: %d, %d, %d, %d, %d, \n", hand[0], hand[1], hand[2], hand[3], hand[4])
-	fmt.Println("Type y to keep, space to reroll:")
+	// fmt.Println("Type y to keep, space to reroll:")
 	reader := bufio.NewReader(os.Stdin)
-	text, _ := reader.ReadString('\n')
+	allInts := regexp.MustCompile("[1-6]{1,5}")
+	var text string
 
 	bools := make([]bool, 5)
-	for idx, c := range text {
-		if idx < len(bools) {
-			bools[idx] = c == rune('y')
+
+OUTER:
+	for {
+		fmt.Println("please enter the values you want to keep.")
+		text, _ = reader.ReadString('\n')
+		if !allInts.MatchString(text) {
+			fmt.Println("only enter numbers between 1 and 6")
+			continue OUTER
 		}
+		selectedValues := make([]int, 0)
+		for idx, c := range text {
+			if c == 10 {
+				break
+			}
+			if int(c) < 49 || int(c) > 54 {
+				// try again
+				fmt.Println("all values must be between 1 and 6", int(c), c, string(c), idx)
+				continue OUTER
+			}
+			selectedValues = append(selectedValues, int(c-'0'))
+
+			// if idx < len(bools) {
+			// 	bools[idx] = c == rune('y')
+			// }
+		}
+		fmt.Println("values selected:", selectedValues)
+		takenDieIndex := make(map[int]bool, 5)
+		for _, value := range selectedValues {
+			valueTaken := false
+			for idx, die := range hand {
+				if !takenDieIndex[idx] && !valueTaken {
+					if die == value {
+						valueTaken = true
+						bools[idx] = true
+						takenDieIndex[idx] = true
+					}
+				}
+			}
+
+			if !valueTaken {
+				fmt.Println("only specify values you have, please, not", value)
+				continue OUTER
+			}
+		}
+
+		break
 	}
 	return RollDecision(bools)
 }
