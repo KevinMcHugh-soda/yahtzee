@@ -14,7 +14,12 @@ import (
 
 func main() {
 	seed := time.Now().Unix()
-	if len(os.Args) > 1 && os.Args[1] == "mass" {
+	fmt.Println("hello", os.Args)
+	if len(os.Args) > 1 && os.Args[1] == "star" {
+		p := yahtzee.MakeEasyPuzzle()
+		yahtzee.Solve(p)
+		return
+	} else if len(os.Args) > 1 && os.Args[1] == "mass" {
 		runManyGames()
 		return
 	} else if len(os.Args) > 1 && os.Args[1] == "regress" {
