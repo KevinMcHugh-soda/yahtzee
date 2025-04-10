@@ -16,7 +16,7 @@ func main() {
 	seed := time.Now().Unix()
 	fmt.Println("hello", os.Args)
 	if len(os.Args) > 1 && os.Args[1] == "star" {
-		p := yahtzee.MakeEasyPuzzle()
+		p := yahtzee.MakeRealPuzzle()
 		yahtzee.Solve(p)
 		return
 	} else if len(os.Args) > 1 && os.Args[1] == "mass" {

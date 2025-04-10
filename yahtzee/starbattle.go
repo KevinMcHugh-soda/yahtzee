@@ -2,6 +2,7 @@ package yahtzee
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Color string
@@ -10,6 +11,8 @@ const (
 	Yellow = "🟨"
 	Blue   = "🟦"
 	Green  = "🟩"
+	Red    = "🟥"
+	Orange = "🟧"
 )
 
 type Segment struct {
@@ -56,6 +59,7 @@ func MakeTrivialPuzzle() Puzzle {
 	return p
 }
 
+// Not actually a valid/solvable puzzle
 func MakeEasyPuzzle() Puzzle {
 	row1 := []Cell{
 		{
@@ -141,6 +145,37 @@ func MakeEasyPuzzle() Puzzle {
 	return p
 }
 
+func MakeRealPuzzle() Puzzle {
+	rows := []string{fiveXfive1, fiveXfive2, fiveXfive3, fiveXfive4, fiveXfive5}
+	return ParsePuzzle(rows)
+}
+
+var fiveXfive1 = "🟨🟨🟩🟩🟩"
+var fiveXfive2 = "🟦🟨🟩🟩🟩"
+var fiveXfive3 = "🟦🟥🟧🟧🟩"
+var fiveXfive4 = "🟥🟥🟧🟧🟩"
+var fiveXfive5 = "🟥🟥🟥🟥🟥"
+
+func ParsePuzzle(rowStrs []string) Puzzle {
+	rows := make([][]Cell, len(rowStrs))
+	for idx, rowStr := range rowStrs {
+		rows[idx] = make([]Cell, len(strings.Split(rowStr, "")))
+	}
+	for idx, rowStr := range rowStrs {
+		for jdx, str := range strings.Split(rowStr, "") {
+			rows[idx][jdx] = Cell{
+				Segment: Segment{Color: Color(str)},
+				State:   Empty, // this shouldn't need to be specified
+				X:       idx,
+				Y:       jdx,
+			}
+		}
+	}
+	// TODO: I shouldn't have to set these explicitly, but
+	p := Puzzle{Cells: rows, CorrectStarsPerArea: 1, Width: 5, Height: 5}
+	return p
+}
+
 func (p *Puzzle) Rows() [][]Cell {
 	return p.Cells
 }
@@ -156,7 +191,6 @@ func (p *Puzzle) Columns() [][]Cell {
 	// fmt.Println(p.Cells)
 	for idx, row := range p.Cells {
 		for jdx, cell := range row {
-			// fmt.Println("jdx, idx, row-len, ret-len", jdx, idx, len(row), len(ret))
 			ret[jdx][idx] = cell
 		}
 	}
@@ -175,9 +209,12 @@ func (p *Puzzle) Segments() map[Color][]Cell {
 	return m
 }
 
-func (p *Puzzle) Print() {
-	for _, row := range p.Cells {
-		str := ""
+func (p *Puzzle) Print(msg string) {
+	fmt.Println(msg)
+
+	// fmt.Println(" 0️⃣||1️⃣||2️⃣||3️⃣4️⃣")
+	for idx, row := range p.Cells {
+		str := fmt.Sprintf("%d|", idx)
 		for _, c := range row {
 			if c.State == Empty {
 				str += string(c.Segment.Color)
@@ -189,14 +226,17 @@ func (p *Puzzle) Print() {
 	}
 }
 
-func coord(x int, y int) map[string]int {
-	return map[string]int{"x": x, "y": y}
+type Coordinate struct {
+	x int
+	y int
+}
+
+func coord(x int, y int) Coordinate {
+	return Coordinate{x: x, y: y}
 }
 
 func (p *Puzzle) Star(x int, y int) (*Puzzle, error) {
-	fmt.Println("state before placing star")
-	p.Print()
-	fmt.Printf("attempting to place a star at (%d,%d)\n", x, y)
+	p.Print(fmt.Sprintf("state before placing star at (%d,%d)", x, y))
 	cell := p.Cells[y][x]
 	if cell.State != Empty {
 		return nil, fmt.Errorf("cell already (%d,%d) has state %s", x, y, cell.State)
@@ -214,12 +254,11 @@ func (p *Puzzle) Star(x int, y int) (*Puzzle, error) {
 		return nil, fmt.Errorf("too many stars in this column")
 	}
 
-	cell.State = Starred
 	p.Cells[y][x].State = Starred
 
 	// Eliminate nearby cells
 	// First construct a list of all possible potentialCoordinates
-	potentialCoordinates := []map[string]int{
+	potentialCoordinates := []Coordinate{
 		coord(x-1, y-1),
 		coord(x-1, y),
 		coord(x-1, y+1),
@@ -229,17 +268,17 @@ func (p *Puzzle) Star(x int, y int) (*Puzzle, error) {
 		coord(x+1, y),
 		coord(x+1, y+1),
 	}
-	finalCoordinates := []map[string]int{}
+	finalCoordinates := make([]Coordinate, 0)
 	// identify any coordinates that are illegal
 	for _, coordinate := range potentialCoordinates {
 		legalX := true
 		legalY := true
 
-		if coordinate["x"] < 0 || coordinate["x"] >= p.Width {
+		if coordinate.x < 0 || coordinate.x >= p.Width {
 			legalX = false
 		}
 
-		if coordinate["y"] < 0 || coordinate["y"] >= p.Height {
+		if coordinate.y < 0 || coordinate.y >= p.Height {
 			legalY = false
 		}
 
@@ -252,12 +291,6 @@ func (p *Puzzle) Star(x int, y int) (*Puzzle, error) {
 	if starsInSegment+1 == p.CorrectStarsPerArea {
 		// Eliminate everything else in this segment
 		for _, other := range p.Segments()[cell.Segment.Color] {
-			if cell.X == other.X && cell.Y == other.Y {
-				continue
-			}
-			if other.State == Starred {
-				return nil, fmt.Errorf("attempting to eliminate a starred cell! %d, %d", other.X, other.Y)
-			}
 			finalCoordinates = append(finalCoordinates, coord(other.X, other.Y))
 		}
 	}
@@ -265,13 +298,7 @@ func (p *Puzzle) Star(x int, y int) (*Puzzle, error) {
 	// Was that the last star in this row?
 	if starsInRow+1 == p.CorrectStarsPerArea {
 		// Eliminate everything else in this row
-		for _, other := range p.Rows()[x] {
-			if cell.X == other.X && cell.Y == other.Y {
-				continue
-			}
-			if other.State == Starred {
-				return nil, fmt.Errorf("attempting to eliminate a starred cell! %d, %d", other.X, other.Y)
-			}
+		for _, other := range p.Rows()[y] {
 			finalCoordinates = append(finalCoordinates, coord(other.X, other.Y))
 		}
 	}
@@ -279,27 +306,76 @@ func (p *Puzzle) Star(x int, y int) (*Puzzle, error) {
 	// Was that the last star in this segment?
 	if starsInColumn+1 == p.CorrectStarsPerArea {
 		// Eliminate everything else in this column
-		for _, other := range p.Columns()[y] {
+		for _, other := range p.Columns()[x] {
 			finalCoordinates = append(finalCoordinates, coord(other.X, other.Y))
 		}
 	}
 
-	// then we'll eliminate any illegal coordinates
+	// fmt.Printf("eliminating (%s)\n", final)
+
+	eliminationStr := "Eliminating: "
+	// then we'll remove any illegal coordinates
 	for _, coordinate := range finalCoordinates {
-		if cell.X == coordinate["x"] && cell.Y == coordinate["y"] {
+		// same
+		if cell.X == coordinate.x && cell.Y == coordinate.y {
 			continue
 		}
-		fmt.Printf("eliminating (%d,%d)\n", coordinate["x"], coordinate["y"])
-		other := p.Cells[coordinate["y"]][coordinate["x"]]
+		other := p.Cells[coordinate.y][coordinate.x]
 		if other.State == Starred {
 			return nil, fmt.Errorf("attempting to eliminate a starred cell! %d, %d", other.X, other.Y)
 		}
-		p.Cells[coordinate["y"]][coordinate["x"]].State = Eliminated
-		fmt.Printf("state of cell (%d, %d) after elimination: %s\n", other.X, other.Y, p.Cells[other.X][other.Y].State)
+		p.Cells[coordinate.y][coordinate.x].State = Eliminated
+
+		eliminationStr = fmt.Sprintf("%s;(%d,%d)", eliminationStr, coordinate.y, coordinate.x)
 	}
-	fmt.Println("printing after starring and eliminating")
-	// The cells here don't feature any eliminated spaces, so what the hell
-	p.Print()
+
+	// Did this make the puzzle unsolvable?
+	// Check all segments to see if they're unsolvable:
+	for color, segment := range p.Segments() {
+		emptyCells, starredCells := 0, 0
+		for _, cell := range segment {
+			if cell.State == Empty {
+				emptyCells += 1
+			} else if cell.State == Starred {
+				starredCells += 1
+			}
+		}
+
+		if emptyCells < p.CorrectStarsPerArea-starredCells {
+			return nil, fmt.Errorf("not enough cells left to solve %s", color)
+		}
+	}
+
+	for idx, segment := range p.Rows() {
+		emptyCells, starredCells := 0, 0
+		for _, cell := range segment {
+			if cell.State == Empty {
+				emptyCells += 1
+			} else if cell.State == Starred {
+				starredCells += 1
+			}
+		}
+
+		if emptyCells < p.CorrectStarsPerArea-starredCells {
+			return nil, fmt.Errorf("not enough cells left to solve row %d", idx)
+		}
+	}
+
+	for idx, segment := range p.Columns() {
+		emptyCells, starredCells := 0, 0
+		for _, cell := range segment {
+			if cell.State == Empty {
+				emptyCells += 1
+			} else if cell.State == Starred {
+				starredCells += 1
+			}
+		}
+
+		if emptyCells < p.CorrectStarsPerArea-starredCells {
+			return nil, fmt.Errorf("not enough cells left to solve column %d", idx)
+		}
+	}
+
 	return p, nil
 }
 
@@ -367,44 +443,76 @@ var globalSolveCounter int
 // We're building a solver for the "star battle" puzzle.
 // It's going to use constraint propagation.
 func Solve(puzzle Puzzle) (Puzzle, bool) {
-	// iterate through the cells
-	// identify cells that cannot possibly be checked
-	puzzle.Print()
-
 OUTER:
 	for !puzzle.Solved() {
 		globalSolveCounter += 1
 		fmt.Println("calls to Solve:", globalSolveCounter)
 
-		if globalSolveCounter > 10 {
+		if globalSolveCounter > 5 {
 			fmt.Println("clearly busted, bailing")
 			break OUTER
 		}
-		puzzle.Print()
+
+		puzzle.Print("going to find a spot")
+
 		for _, row := range puzzle.Cells {
 			for _, cell := range row {
 				if cell.State != Empty {
 					fmt.Printf("skipping cell (%d,%d) which already has a state of %s\n", cell.X, cell.Y, cell.State)
 					continue
 				}
-				puzzle.Print()
-				p, err := puzzle.Star(cell.X, cell.Y)
+
+				// 🔁 Deep copy before attempting a star
+				clone := puzzle.DeepCopy()
+				newPuzzle, err := clone.Star(cell.X, cell.Y)
 				if err != nil {
-					fmt.Println("uh oh, error: ", err)
-					puzzle.Print()
+					// ❌ Don't touch the original puzzle
+					puzzle.Print(fmt.Sprintf("uh oh, erorr! we'll have to backtrack. state with star placed: %s\n", err))
 					continue
-				} else if puzzle.Solved() {
-					break OUTER
-				} else {
-					// recurse
-					_, solved := Solve(*p)
-					if solved {
-						return *p, true
-					}
+				}
+
+				// ✅ Either solved, or keep searching
+				if newPuzzle.Solved() {
+					return *newPuzzle, true
+				}
+
+				result, solved := Solve(*newPuzzle)
+				if solved {
+					return result, true
 				}
 			}
 		}
 	}
 
-	return puzzle, true
+	return puzzle, puzzle.Solved()
+}
+
+//	func clone(original [][]Cell) [][]Cell {
+//		cloned := make([][]Cell, len(original))
+//		for i := range original {
+//			cloned[i] = make([]Cell, len(original[i]))
+//			copy(cloned[i], original[i])
+//		}
+//		return cloned
+//	}
+func (p *Puzzle) DeepCopy() *Puzzle {
+	newCells := make([][]Cell, len(p.Cells))
+	for y := range p.Cells {
+		newCells[y] = make([]Cell, len(p.Cells[y]))
+		for x, cell := range p.Cells[y] {
+			newCells[y][x] = Cell{
+				X:       cell.X,
+				Y:       cell.Y,
+				State:   cell.State,   // this is what really matters
+				Segment: cell.Segment, // safe to share if immutable
+			}
+		}
+	}
+
+	return &Puzzle{
+		Cells:               newCells,
+		Width:               p.Width,
+		Height:              p.Height,
+		CorrectStarsPerArea: p.CorrectStarsPerArea,
+	}
 }
