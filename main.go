@@ -18,9 +18,19 @@ func main() {
 	seed := time.Now().Unix()
 	fmt.Println("hello", os.Args)
 	if len(os.Args) > 1 && os.Args[1] == "star" {
-		// p := yahtzee.MakeRealPuzzle()
-		p := yahtzee.ParsePuzzle(strings.Split(hard, "\n"))
-		x, solved := yahtzee.Solve(p)
+		var p *yahtzee.Puzzle
+		var err error
+
+		if len(os.Args) > 2 && os.Args[2] == "hard" {
+			p, err = yahtzee.ParsePuzzle(strings.Split(hard, "\n"), 1)
+			if err != nil {
+				fmt.Println("Error in parsing puzzle!", err)
+			}
+		} else {
+			y := yahtzee.MakeEasyPuzzle()
+			p = &y
+		}
+		x, solved := yahtzee.Solve(*p)
 		if solved {
 			x.Print("solution!!!")
 		} else {

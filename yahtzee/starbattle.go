@@ -51,9 +51,11 @@ type Puzzle struct {
 	CorrectStarsPerArea int
 }
 
-func MakeRealPuzzle() Puzzle {
+func MakeEasyPuzzle() Puzzle {
 	rows := []string{fiveXfive1, fiveXfive2, fiveXfive3, fiveXfive4, fiveXfive5}
-	return ParsePuzzle(rows)
+	p, _ := ParsePuzzle(rows, 1)
+
+	return *p
 }
 
 var fiveXfive1 = "🟨🟨🟩🟩🟩"
@@ -65,15 +67,24 @@ var fiveXfive5 = "🟥🟥🟥🟥🟥"
 var letters = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}
 var letterIndex = map[string]int{"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7, "I": 8, "J": 9}
 
-func ParsePuzzle(rowStrs []string) Puzzle {
+func ParsePuzzle(rowStrs []string, starsPerArea int) (*Puzzle, error) {
 	cols := make(map[string][]Cell)
-	for idx, letter := range letters {
-		rowStr := rowStrs[idx]
-		cols[letter] = make([]Cell, len(strings.Split(rowStr, "")))
+	split := strings.Split(rowStrs[0], "")
+	width := len(split)
+
+	for idx := 0; idx < width; idx += 1 {
+		letter := letters[idx]
+		cols[letter] = make([]Cell, width)
 	}
+
 	for rowIdx, rowStr := range rowStrs {
 		split := strings.Split(rowStr, "")
-		for jdx, letter := range letters {
+		if len(split) != width {
+			return nil, fmt.Errorf("lines are not equal length! First line was %d, line #%d is %d", width, rowIdx, len(split))
+		}
+		for jdx := 0; jdx < width; jdx += 1 {
+			letter := letters[jdx]
+
 			cols[letter][rowIdx] = Cell{
 				Segment: Segment{Color: Color(split[jdx])},
 				State:   Empty, // this shouldn't need to be specified
@@ -82,9 +93,8 @@ func ParsePuzzle(rowStrs []string) Puzzle {
 			}
 		}
 	}
-	// TODO: I shouldn't have to set these explicitly, but
-	p := Puzzle{Cells: cols, CorrectStarsPerArea: 1, Width: 5, Height: 5}
-	return p
+	p := Puzzle{Cells: cols, CorrectStarsPerArea: starsPerArea, Width: width, Height: len(rowStrs)}
+	return &p, nil
 }
 
 func (p *Puzzle) Rows() [][]Cell {
@@ -94,7 +104,7 @@ func (p *Puzzle) Rows() [][]Cell {
 		ret[idx] = make([]Cell, p.Width)
 	}
 
-	for cdx, letter := range letters {
+	for cdx, letter := range p.ColumnNames() {
 		column := p.Cells[letter]
 		for rdx, cell := range column {
 			ret[rdx][cdx] = cell
@@ -111,7 +121,7 @@ func (p *Puzzle) Columns() map[string][]Cell {
 		ret[idx] = make([]Cell, p.Width)
 	}
 
-	for idx, letter := range letters {
+	for idx, letter := range p.ColumnNames() {
 		row := p.Cells[letter]
 		for jdx, cell := range row {
 			ret[jdx][idx] = cell
@@ -131,11 +141,14 @@ func (p *Puzzle) Segments() map[Color][]Cell {
 
 	return m
 }
+func (p *Puzzle) ColumnNames() []string {
+	return letters[0:p.Width]
+}
 
 func (p *Puzzle) Print(msg string) {
 	fmt.Println(msg)
 
-	fmt.Println(" |A B C D E F G H I J")
+	fmt.Printf(" |%s\n", strings.Join(p.ColumnNames(), " "))
 	for idx, row := range p.Rows() {
 		str := fmt.Sprintf("%d|", idx)
 		for _, c := range row {
@@ -226,7 +239,7 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 	// Was that the last star in this row?
 	if starsInRow+1 == p.CorrectStarsPerArea {
 		// Eliminate everything else in this row
-		for _, col := range letters {
+		for _, col := range p.ColumnNames() {
 			finalCoordinates = append(finalCoordinates, coord(row, col))
 		}
 	}
@@ -242,6 +255,9 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 	// then we'll remove any illegal coordinates
 	for _, coordinate := range finalCoordinates {
 		if coordinate.col == "Z" || coordinate.row < 0 {
+			continue
+		}
+		if letterIndex[coordinate.col] >= p.Width {
 			continue
 		}
 		other := p.Cells[coordinate.col][coordinate.row]
@@ -288,7 +304,7 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 		}
 	}
 
-	for _, letter := range letters {
+	for _, letter := range p.ColumnNames() {
 		segment := p.Columns()[letter]
 		emptyCells, starredCells := 0, 0
 		for _, cell := range segment {
@@ -383,14 +399,13 @@ OUTER:
 			break OUTER
 		}
 
-		puzzle.Print("state while looking for a cell to attempt eliminating")
-
-		for _, letter := range letters {
+		for _, letter := range puzzle.ColumnNames() {
 			column := puzzle.Columns()[letter]
 			for _, cell := range column {
 				if cell.State != Empty {
 					continue
 				}
+				puzzle.Print(fmt.Sprintf("state before starring %s", cell.Coords()))
 
 				// Deep copy before attempting a star
 				clone := puzzle.DeepCopy()
