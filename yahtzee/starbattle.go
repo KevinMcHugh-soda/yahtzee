@@ -35,6 +35,10 @@ type Cell struct {
 	Column  string
 }
 
+func (c *Cell) Coords() string {
+	return fmt.Sprintf("%s%d", c.Column, c.Row)
+}
+
 type Puzzle struct {
 	Cells               map[string][]Cell
 	Width               int
@@ -156,7 +160,7 @@ var fiveXfive4 = "🟥🟥🟧🟧🟩"
 var fiveXfive5 = "🟥🟥🟥🟥🟥"
 
 var letters = []string{"A", "B", "C", "D", "E"}
-var letterIndex = map[string]int{"A": 1, "B": 2, "C": 3, "D": 4, "E": 5}
+var letterIndex = map[string]int{"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}
 
 func ParsePuzzle(rowStrs []string) Puzzle {
 	rows := make(map[string][]Cell)
@@ -256,18 +260,31 @@ func coord(row int, col string) Coordinate {
 	return Coordinate{row: row, col: col}
 }
 
-func coordInt(x int, y int) Coordinate {
-	if y < 0 || y > len(letters) {
-		return Coordinate{row: -1}
+func (p *Puzzle) coordInt(y int, x int) Coordinate {
+	// val := 0
+	r := -8
+	c := "Q"
+	if y < 0 || y >= p.Width {
+		r = -9
+		c = "Z"
+		// return Coordinate{row: -9, col: "Z"}
+		// val = -9
+	} else {
+		r = x
+		c = letters[y]
+		// val = letters[y]
 	}
-	return Coordinate{row: x, col: letters[y]}
+	fmt.Println("getting coordinate for", y, x, c, r)
+
+	return Coordinate{row: r, col: c}
+	// return Coordinate{row: x, col: letters[y]}
 }
 
 func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 	cell := p.Cells[column][row]
-	p.Print(fmt.Sprintf("state before placing star at (%d,%s)(%s)", row, column, cell.Segment.Color))
+	p.Print(fmt.Sprintf("state before placing star at (%s)(%s)", cell.Coords(), cell.Segment.Color))
 	if cell.State != Empty {
-		return nil, fmt.Errorf("cell already (%d,%s) has state %s", row, column, cell.State)
+		return nil, fmt.Errorf("cell already (%s) has state %s", cell.Coords(), cell.State)
 	}
 	starsInSegment := p.StarsPerSegment(cell.Segment.Color)
 	if starsInSegment >= p.CorrectStarsPerArea {
@@ -284,22 +301,49 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 
 	p.Cells[column][row].State = Starred
 
+	// Right coords:
+	// B0,C0,D0,E0
+	// A1,A2,A3,A4
+	// B0,B1,A1
+
+	// B0,A1,B1
+
+	// getting coordinate for -1 0 Z -9
+	// getting coordinate for -1 1 Z -9
+	// getting coordinate for -1 2 Z -9
+	// getting coordinate for 0 0 A 0
+	// getting coordinate for 0 2 A 2
+	// getting coordinate for 1 0 B 0
+	// getting coordinate for 1 1 B 1
+	// getting coordinate for 1 2 B 2
+	//  |A B C D E
+	// 0|⭐️🟦❌🟥🟥
+	// 1|❌❌❌🟥🟥
+	// 2|🟩🟩❌🟧🟥
+	// 3|🟩🟩🟧❌🟥
+	// 4|🟩🟩🟩🟩❌
+	// skipping cell (A0) which
+
 	// Eliminate nearby cells
 	// First construct a list of all possible potentialCoordinates
 	colIndex := letterIndex[column]
 	potentialCoordinates := []Coordinate{
-		coordInt(row-1, colIndex-1),
-		coordInt(row-1, colIndex),
-		coordInt(row-1, colIndex+1),
-		coordInt(row, colIndex-1),
-		coordInt(row, colIndex+1),
-		coordInt(row+1, colIndex-1),
-		coordInt(row+1, colIndex),
-		coordInt(row+1, colIndex+1),
+		p.coordInt(row-1, colIndex-1),
+		p.coordInt(row-1, colIndex),
+		p.coordInt(row-1, colIndex+1),
+		p.coordInt(row, colIndex-1),
+		p.coordInt(row, colIndex+1),
+		p.coordInt(row+1, colIndex-1),
+		p.coordInt(row+1, colIndex),
+		p.coordInt(row+1, colIndex+1),
 	}
 
-	fmt.Println("current coords:", row, column)
-	fmt.Println("potential coords: ", potentialCoordinates)
+	fmt.Println("current coords:", column, row)
+	potStr := ""
+	for _, c := range potentialCoordinates {
+		potStr += fmt.Sprintf("%s%d; ", c.col, c.row)
+	}
+	fmt.Println("potential coords: ", potStr)
 	finalCoordinates := make([]Coordinate, 0)
 	// identify any coordinates that are illegal
 	for _, coordinate := range potentialCoordinates {
@@ -343,8 +387,6 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 		}
 	}
 
-	// fmt.Printf("eliminating (%s)\n", final)
-
 	eliminationStr := "Eliminating: "
 	// then we'll remove any illegal coordinates
 	for _, coordinate := range finalCoordinates {
@@ -354,11 +396,11 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 			continue
 		}
 		if other.State == Starred {
-			return nil, fmt.Errorf("attempting to eliminate a starred cell! %d, %s", other.Row, other.Column)
+			return nil, fmt.Errorf("attempting to eliminate a starred cell! %s", other.Coords())
 		}
 		p.Cells[coordinate.col][coordinate.row].State = Eliminated
 
-		eliminationStr = fmt.Sprintf("%s;(%d,%s)", eliminationStr, coordinate.col, coordinate.row)
+		eliminationStr = fmt.Sprintf("%s;(%s)", eliminationStr, other.Coords())
 	}
 
 	fmt.Println(eliminationStr)
@@ -395,7 +437,9 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 		}
 	}
 
-	for idx, segment := range p.Columns() {
+	// TODO: iterate thru letters to make this deterministic
+	for _, letter := range letters {
+		segment := p.Columns()[letter]
 		emptyCells, starredCells := 0, 0
 		for _, cell := range segment {
 			if cell.State == Empty {
@@ -406,7 +450,7 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 		}
 
 		if emptyCells < p.CorrectStarsPerArea-starredCells {
-			return nil, fmt.Errorf("not enough cells left to solve column %d", idx)
+			return nil, fmt.Errorf("not enough cells left to solve column %s", letter)
 		}
 	}
 
@@ -458,13 +502,15 @@ func (p *Puzzle) Solved() bool {
 	for idx := range p.Rows() {
 		stars := p.StarsPerRow(idx)
 		if stars != p.CorrectStarsPerArea {
+			fmt.Printf("not enough stars in row %d. found %d, need %d\n", idx, stars, p.CorrectStarsPerArea)
 			return false
 		}
 	}
 
-	for idx := range p.Columns() {
-		stars := p.StarsPerColumn(idx)
+	for letter := range p.Columns() {
+		stars := p.StarsPerColumn(letter)
 		if stars != p.CorrectStarsPerArea {
+			fmt.Printf("not enough stars in column %s. found %d, need %d\n", letter, stars, p.CorrectStarsPerArea)
 			return false
 		}
 	}
@@ -489,10 +535,10 @@ OUTER:
 
 		puzzle.Print("state while looking for a cell to attempt eliminating")
 
-		for _, row := range puzzle.Cells {
+		for _, row := range puzzle.Rows() {
 			for _, cell := range row {
 				if cell.State != Empty {
-					fmt.Printf("skipping cell (%d,%s) which already has a state of %s\n", cell.Row, cell.Column, cell.State)
+					fmt.Printf("skipping cell (%s) which already has a state of %s\n", cell.Coords(), cell.State)
 					continue
 				}
 
