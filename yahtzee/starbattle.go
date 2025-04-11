@@ -13,6 +13,11 @@ const (
 	Green  = "🟩"
 	Red    = "🟥"
 	Orange = "🟧"
+	Black  = "⬛️"
+	Purple = "🟪"
+	White  = "⬜️"
+	Brown  = "🟫"
+	Beer   = "🍺"
 )
 
 type Segment struct {
@@ -57,8 +62,8 @@ var fiveXfive3 = "🟦🟥🟧🟧🟩"
 var fiveXfive4 = "🟥🟥🟧🟧🟩"
 var fiveXfive5 = "🟥🟥🟥🟥🟥"
 
-var letters = []string{"A", "B", "C", "D", "E"}
-var letterIndex = map[string]int{"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}
+var letters = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}
+var letterIndex = map[string]int{"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7, "I": 8, "J": 9}
 
 func ParsePuzzle(rowStrs []string) Puzzle {
 	cols := make(map[string][]Cell)
@@ -130,7 +135,7 @@ func (p *Puzzle) Segments() map[Color][]Cell {
 func (p *Puzzle) Print(msg string) {
 	fmt.Println(msg)
 
-	fmt.Println(" |A B C D E")
+	fmt.Println(" |A B C D E F G H I J")
 	for idx, row := range p.Rows() {
 		str := fmt.Sprintf("%d|", idx)
 		for _, c := range row {
@@ -177,7 +182,7 @@ func (p *Puzzle) coordInt(row int, col int) Coordinate {
 
 func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 	cell := p.Cells[column][row]
-	p.Print(fmt.Sprintf("state before placing star at (%s)(%s)", cell.Coords(), cell.Segment.Color))
+	// p.Print(fmt.Sprintf("state before placing star at (%s)(%s)", cell.Coords(), cell.Segment.Color))
 	if cell.State != Empty {
 		return p, fmt.Errorf("cell already (%s) has state %s", cell.Coords(), cell.State)
 	}
@@ -392,6 +397,8 @@ OUTER:
 				newPuzzle, err := clone.Star(cell.Row, cell.Column)
 				if err != nil {
 					puzzle.Print(fmt.Sprintf("uh oh, erorr! we'll have to backtrack. state with star placed: %s\n", err))
+					// since we couldn't star this cell, we can eliminate it.
+					puzzle.Cells[cell.Column][cell.Row].State = Eliminated
 					continue
 				}
 

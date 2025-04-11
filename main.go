@@ -12,13 +12,21 @@ import (
 	"kevinmchugh.me/yahtzee/m/v2/yahtzee"
 )
 
+var hard = "🟨🟨🟨🟨🟩🟩🟩🟩🟦🟦\n🟨🟨🟨🟨🟩🟩🟩🟩🟦🟦\n🟨🟨🟥🟥🟩🟩🟩🟦🟦🟦\n🟨🟨🟥🟥🟩🟦🟦🟦🟦🟧\n⬛🟥🟥🟪🟪🟪🟪🟧🟧🟧\n⬛🟪🟪🟪🟪🟪🟪⬜⬜⬜\n⬛⬛⬛🟪🟪🟪🟪🟪⬜⬜\n⬛⬛⬛🟪🟫🟫🟪⬜⬜🟫\n⬛⬛🍺🍺🍺🟫🟫🟫🟫🟫\n⬛⬛⬛🍺🍺🍺🍺🍺🍺🍺"
+
 func main() {
 	seed := time.Now().Unix()
 	fmt.Println("hello", os.Args)
 	if len(os.Args) > 1 && os.Args[1] == "star" {
-		p := yahtzee.MakeRealPuzzle()
-		x, _ := yahtzee.Solve(p)
-		x.Print("solution!!!")
+		// p := yahtzee.MakeRealPuzzle()
+		p := yahtzee.ParsePuzzle(strings.Split(hard, "\n"))
+		x, solved := yahtzee.Solve(p)
+		if solved {
+			x.Print("solution!!!")
+		} else {
+			x.Print("last answer")
+		}
+
 		return
 	} else if len(os.Args) > 1 && os.Args[1] == "mass" {
 		runManyGames()
