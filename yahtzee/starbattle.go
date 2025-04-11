@@ -385,6 +385,7 @@ func (p *Puzzle) Solved() bool {
 }
 
 var globalSolveCounter int
+var totalCellsConsidered int
 
 // We're building a solver for the "star battle" puzzle.
 // It's going to use constraint propagation.
@@ -392,9 +393,9 @@ func Solve(puzzle Puzzle) (Puzzle, bool) {
 OUTER:
 	for !puzzle.Solved() {
 		globalSolveCounter += 1
-		fmt.Println("calls to Solve:", globalSolveCounter)
+		fmt.Println("calls to Solve:", globalSolveCounter, "cells considered:", totalCellsConsidered)
 
-		if globalSolveCounter > 5 {
+		if globalSolveCounter > 1000 {
 			fmt.Println("clearly busted, bailing")
 			break OUTER
 		}
@@ -405,6 +406,7 @@ OUTER:
 				if cell.State != Empty {
 					continue
 				}
+				totalCellsConsidered += 1
 				puzzle.Print(fmt.Sprintf("state before starring %s", cell.Coords()))
 
 				// Deep copy before attempting a star
