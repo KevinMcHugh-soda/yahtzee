@@ -17,7 +17,8 @@ func main() {
 	fmt.Println("hello", os.Args)
 	if len(os.Args) > 1 && os.Args[1] == "star" {
 		p := yahtzee.MakeRealPuzzle()
-		yahtzee.Solve(p)
+		x, _ := yahtzee.Solve(p)
+		x.Print("solution!!!")
 		return
 	} else if len(os.Args) > 1 && os.Args[1] == "mass" {
 		runManyGames()
