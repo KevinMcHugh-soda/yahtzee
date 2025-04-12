@@ -13,6 +13,7 @@ import (
 )
 
 var hard = "🟨🟨🟨🟨🟩🟩🟩🟩🟦🟦\n🟨🟨🟨🟨🟩🟩🟩🟩🟦🟦\n🟨🟨🟥🟥🟩🟩🟩🟦🟦🟦\n🟨🟨🟥🟥🟩🟦🟦🟦🟦🟧\n⬛🟥🟥🟪🟪🟪🟪🟧🟧🟧\n⬛🟪🟪🟪🟪🟪🟪⬜⬜⬜\n⬛⬛⬛🟪🟪🟪🟪🟪⬜⬜\n⬛⬛⬛🟪🟫🟫🟪⬜⬜🟫\n⬛⬛🍺🍺🍺🟫🟫🟫🟫🟫\n⬛⬛⬛🍺🍺🍺🍺🍺🍺🍺"
+var april11 = "🟧🟧🟧🟪🟪🟦🟦\n🟧🟩🟧⬜🟪🟥🟦\n🟩🟩🟧⬜🟥🟥🟦\n🟨🟩🟧🟧🟧🟥🟦\n🟨🟩🟧🟧🟧🟥🟦\n🟩🟩🟩🟧🟥🟥🟥\n🟧🟧🟧🟧🟧🟧🟧"
 
 func main() {
 	seed := time.Now().Unix()
@@ -22,7 +23,12 @@ func main() {
 		var err error
 
 		if len(os.Args) > 2 && os.Args[2] == "hard" {
-			p, err = yahtzee.ParsePuzzle(strings.Split(hard, "\n"), 1)
+			p, err = yahtzee.ParsePuzzle(strings.Split(hard, "\n"), 2)
+			if err != nil {
+				fmt.Println("Error in parsing puzzle!", err)
+			}
+		} else if len(os.Args) > 2 && os.Args[2] == "411" {
+			p, err = yahtzee.ParsePuzzle(strings.Split(april11, "\n"), 1)
 			if err != nil {
 				fmt.Println("Error in parsing puzzle!", err)
 			}
@@ -30,7 +36,13 @@ func main() {
 			y := yahtzee.MakeEasyPuzzle()
 			p = &y
 		}
-		x, solved := yahtzee.Solve(*p)
+		p2, err := p.Deduce()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		p2.Print("state before solving, after deduction")
+		x, solved := yahtzee.Solve(*p2)
 		if solved {
 			x.Print("solution!!!")
 		} else {

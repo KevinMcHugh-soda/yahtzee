@@ -2,6 +2,7 @@ package yahtzee
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -265,7 +266,7 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 		}
 
 		if emptyCells < p.CorrectStarsPerArea-starredCells {
-			p.Print("state with errror")
+			p.Print(fmt.Sprintf("state with errror after placing at %s", cell.Coords()))
 			return p, fmt.Errorf("not enough cells left to solve %s", color)
 		}
 	}
@@ -300,41 +301,35 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 			return p, fmt.Errorf("not enough cells left to solve column %s", letter)
 		}
 	}
+	return p.Deduce()
+}
 
-	return p, nil
+func countStars(cells []Cell, condition func(Cell) bool) int {
+	stars := 0
+	for _, cell := range cells {
+		if condition(cell) {
+			stars++
+		}
+	}
+	return stars
 }
 
 func (p *Puzzle) StarsPerSegment(segment Color) int {
-	stars := 0
-	for _, cell := range p.Segments()[segment] {
-		if cell.State == Starred {
-			stars += 1
-		}
-	}
-
-	return stars
+	return countStars(p.Segments()[segment], func(c Cell) bool {
+		return c.State == Starred
+	})
 }
 
 func (p *Puzzle) StarsPerRow(row int) int {
-	stars := 0
-	for _, cell := range p.Rows()[row] {
-		if cell.State == Starred {
-			stars += 1
-		}
-	}
-
-	return stars
+	return countStars(p.Rows()[row], func(c Cell) bool {
+		return c.State == Starred
+	})
 }
 
 func (p *Puzzle) StarsPerColumn(column string) int {
-	stars := 0
-	for _, cell := range p.Columns()[column] {
-		if cell.State == Starred {
-			stars += 1
-		}
-	}
-
-	return stars
+	return countStars(p.Columns()[column], func(c Cell) bool {
+		return c.State == Starred
+	})
 }
 
 func (p *Puzzle) Solved() bool {
@@ -366,54 +361,275 @@ func (p *Puzzle) Solved() bool {
 }
 
 var globalSolveCounter int
-var totalCellsConsidered int
+
+func isHorizontalSegment(cells []Cell) bool {
+	firstRow := cells[0].Row
+	for _, c := range cells {
+		if c.Row != firstRow {
+			return false
+		}
+	}
+	return true
+}
+
+func isVerticalSegment(cells []Cell) bool {
+	firstCol := cells[0].Column
+	for _, c := range cells {
+		if c.Column != firstCol {
+			return false
+		}
+	}
+	return true
+}
 
 // We're building a solver for the "star battle" puzzle.
 // It's going to use constraint propagation.
-func Solve(puzzle Puzzle) (Puzzle, bool) {
-OUTER:
-	for !puzzle.Solved() {
-		globalSolveCounter += 1
-		fmt.Println("calls to Solve:", globalSolveCounter, "cells considered:", totalCellsConsidered)
+// func Solve(puzzle Puzzle) (Puzzle, bool) {
+// OUTER:
+// 	for !puzzle.Solved() {
+// 		globalSolveCounter += 1
+// 		fmt.Println("calls to Solve:", globalSolveCounter, "cells considered:", totalCellsConsidered)
 
-		if globalSolveCounter > 1000 {
-			fmt.Println("clearly busted, bailing")
-			break OUTER
+// 		if globalSolveCounter > 1000 {
+// 			fmt.Println("clearly busted, bailing")
+// 			break OUTER
+// 		}
+
+// 		for _, letter := range puzzle.ColumnNames() {
+// 			column := puzzle.Columns()[letter]
+// 			for _, cell := range column {
+// 				if cell.State != Empty {
+// 					continue
+// 				}
+// 				totalCellsConsidered += 1
+// 				puzzle.Print(fmt.Sprintf("state before starring %s", cell.Coords()))
+
+// 				// Deep copy before attempting a star
+// 				clone := puzzle.DeepCopy()
+// 				newPuzzle, err := clone.Star(cell.Row, cell.Column)
+// 				if err != nil {
+// 					puzzle.Print(fmt.Sprintf("uh oh, erorr! we'll have to backtrack. state with star placed: %s\n", err))
+// 					// since we couldn't star this cell, we can eliminate it.
+// 					// puzzle.Cells[cell.Column][cell.Row].State = Eliminated
+// 					continue
+// 				}
+
+// 				// Either solved, or keep searching
+// 				if newPuzzle.Solved() {
+// 					return *newPuzzle, true
+// 				}
+
+// 				result, solved := Solve(*newPuzzle)
+// 				if solved {
+// 					return result, true
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	return puzzle, puzzle.Solved()
+// }
+
+func (p *Puzzle) checkUnsolvability(cells []Cell) bool {
+	emptyCells, starredCells := 0, 0
+	for _, cell := range cells {
+		if cell.State == Empty {
+			emptyCells++
+		} else if cell.State == Starred {
+			starredCells++
 		}
+	}
+	return emptyCells < p.CorrectStarsPerArea-starredCells
+}
 
-		for _, letter := range puzzle.ColumnNames() {
-			column := puzzle.Columns()[letter]
-			for _, cell := range column {
-				if cell.State != Empty {
-					continue
-				}
-				totalCellsConsidered += 1
-				puzzle.Print(fmt.Sprintf("state before starring %s", cell.Coords()))
+func (p *Puzzle) IsUnsolvable() bool {
+	for _, segment := range p.Segments() {
+		if p.checkUnsolvability(segment) {
+			return true
+		}
+	}
 
-				// Deep copy before attempting a star
-				clone := puzzle.DeepCopy()
-				newPuzzle, err := clone.Star(cell.Row, cell.Column)
-				if err != nil {
-					puzzle.Print(fmt.Sprintf("uh oh, erorr! we'll have to backtrack. state with star placed: %s\n", err))
-					// since we couldn't star this cell, we can eliminate it.
-					puzzle.Cells[cell.Column][cell.Row].State = Eliminated
-					continue
-				}
+	for _, row := range p.Rows() {
+		if p.checkUnsolvability(row) {
+			return true
+		}
+	}
 
-				// Either solved, or keep searching
+	for _, column := range p.ColumnNames() {
+		if p.checkUnsolvability(p.Columns()[column]) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func Solve(puzzle Puzzle) (Puzzle, bool) {
+	globalSolveCounter++
+	fmt.Println("calls to Solve:", globalSolveCounter)
+	if globalSolveCounter > 1000 {
+		fmt.Println("bailing!")
+		return puzzle, false
+	}
+
+	if puzzle.Solved() {
+		return puzzle, true
+	}
+
+	if puzzle.IsUnsolvable() {
+		return puzzle, false
+	}
+
+	// Step 1: Get segments sorted by size (ascending)
+	type segmentInfo struct {
+		color Color
+		cells []Cell
+	}
+	var segments []segmentInfo
+	for color, cells := range puzzle.Segments() {
+		segments = append(segments, segmentInfo{color, cells})
+	}
+	sort.Slice(segments, func(i, j int) bool {
+		return len(segments[i].cells) < len(segments[j].cells)
+	})
+
+	// Step 2: Try to solve using the smallest segment first
+	for _, seg := range segments {
+		for _, cell := range seg.cells {
+			if cell.State != Empty {
+				continue
+			}
+
+			puzzle.Print(fmt.Sprintf("state before starring at %s", cell.Coords()))
+			// Try placing a star
+			starClone := puzzle.DeepCopy()
+			newPuzzle, err := starClone.Star(cell.Row, cell.Column)
+			if err == nil {
 				if newPuzzle.Solved() {
 					return *newPuzzle, true
 				}
-
 				result, solved := Solve(*newPuzzle)
 				if solved {
 					return result, true
 				}
 			}
+
+			// Try eliminating the cell
+			elimClone := puzzle.DeepCopy()
+			elimClone.Cells[cell.Column][cell.Row].State = Eliminated
+
+			if elimClone.Solved() {
+				return *elimClone, true
+			}
+			result, solved := Solve(*elimClone)
+			if solved {
+				return result, true
+			}
 		}
 	}
 
-	return puzzle, puzzle.Solved()
+	// No valid paths
+	return puzzle, false
+}
+
+func (p *Puzzle) Deduce() (*Puzzle, error) {
+	changed := true
+
+	for changed {
+		changed = false
+
+		// 1. Eliminate full segments
+		for color, segment := range p.Segments() {
+			for _, cell := range segment {
+				live := p.Cells[cell.Column][cell.Row]
+				if p.StarsPerSegment(color) == p.CorrectStarsPerArea && live.State == Empty {
+					p.Cells[cell.Column][cell.Row].State = Eliminated
+					changed = true
+				}
+			}
+		}
+
+		// 2. Eliminate full rows
+		for rowIdx, row := range p.Rows() {
+			if p.StarsPerRow(rowIdx) == p.CorrectStarsPerArea {
+				for _, cell := range row {
+					if cell.State == Empty {
+						p.Cells[cell.Column][cell.Row].State = Eliminated
+						changed = true
+					}
+				}
+			}
+		}
+
+		// 3. Eliminate full columns
+		for _, col := range p.ColumnNames() {
+			if p.StarsPerColumn(col) == p.CorrectStarsPerArea {
+				for _, cell := range p.Cells[col] {
+					if cell.State == Empty {
+						p.Cells[cell.Column][cell.Row].State = Eliminated
+						changed = true
+					}
+				}
+			}
+		}
+
+		// 4. Handle horizontal/vertical segment constraint logic
+		for color, segment := range p.Segments() {
+			stars := 0
+			for _, cell := range segment {
+				live := p.Cells[cell.Column][cell.Row]
+				if live.State == Starred {
+					stars++
+				}
+			}
+
+			// todo make this work for multiple stars.
+			if p.CorrectStarsPerArea == 1 {
+				if isHorizontalSegment(segment) {
+					row := segment[0].Row
+					for _, cell := range p.Rows()[row] {
+						if cell.State == Empty && cell.Segment != color {
+							p.Cells[cell.Column][cell.Row].State = Eliminated
+							changed = true
+						}
+					}
+				}
+
+				if isVerticalSegment(segment) {
+					col := segment[0].Column
+					for _, cell := range p.Cells[col] {
+						if cell.State == Empty && cell.Segment != color {
+							p.Cells[cell.Column][cell.Row].State = Eliminated
+							changed = true
+						}
+					}
+				}
+			}
+		}
+
+		// 5. Star all remaining cells if they are the only option in their segment
+		for _, segment := range p.Segments() {
+			empties := []Cell{}
+			stars := 0
+			for _, cell := range segment {
+				live := p.Cells[cell.Column][cell.Row]
+				if live.State == Starred {
+					stars++
+				} else if live.State == Empty {
+					empties = append(empties, live)
+				}
+			}
+			needed := p.CorrectStarsPerArea - stars
+			if needed == len(empties) {
+				for _, cell := range empties {
+					p.Cells[cell.Column][cell.Row].State = Starred
+					changed = true
+				}
+			}
+		}
+	}
+
+	return p, nil
 }
 
 func (p *Puzzle) DeepCopy() *Puzzle {
