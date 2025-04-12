@@ -20,11 +20,6 @@ const (
 	Beer   = "🍺"
 )
 
-type Segment struct {
-	Color Color
-	Cells []Cell
-}
-
 type State string
 
 const (
@@ -34,7 +29,7 @@ const (
 )
 
 type Cell struct {
-	Segment Segment
+	Segment Color
 	State   State
 	Row     int
 	Column  string
@@ -86,7 +81,7 @@ func ParsePuzzle(rowStrs []string, starsPerArea int) (*Puzzle, error) {
 			letter := letters[jdx]
 
 			cols[letter][rowIdx] = Cell{
-				Segment: Segment{Color: Color(split[jdx])},
+				Segment: Color(split[jdx]),
 				State:   Empty, // this shouldn't need to be specified
 				Row:     rowIdx,
 				Column:  letter,
@@ -113,21 +108,7 @@ func (p *Puzzle) Rows() [][]Cell {
 	return ret
 }
 
-// TODO memoize these 2, maybe
 func (p *Puzzle) Columns() map[string][]Cell {
-	ret := make([][]Cell, p.Height)
-
-	for idx := 0; idx < p.Height; idx += 1 {
-		ret[idx] = make([]Cell, p.Width)
-	}
-
-	for idx, letter := range p.ColumnNames() {
-		row := p.Cells[letter]
-		for jdx, cell := range row {
-			ret[jdx][idx] = cell
-		}
-	}
-
 	return p.Cells
 }
 
@@ -135,7 +116,7 @@ func (p *Puzzle) Segments() map[Color][]Cell {
 	m := make(map[Color][]Cell)
 	for _, row := range p.Cells {
 		for _, cell := range row {
-			m[cell.Segment.Color] = append(m[cell.Segment.Color], cell)
+			m[cell.Segment] = append(m[cell.Segment], cell)
 		}
 	}
 
@@ -153,7 +134,7 @@ func (p *Puzzle) Print(msg string) {
 		str := fmt.Sprintf("%d|", idx)
 		for _, c := range row {
 			if c.State == Empty {
-				str += string(c.Segment.Color)
+				str += string(c.Segment)
 			} else {
 				str += string(c.State)
 			}
@@ -195,11 +176,11 @@ func (p *Puzzle) coordInt(row int, col int) Coordinate {
 
 func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 	cell := p.Cells[column][row]
-	// p.Print(fmt.Sprintf("state before placing star at (%s)(%s)", cell.Coords(), cell.Segment.Color))
+	// p.Print(fmt.Sprintf("state before placing star at (%s)(%s)", cell.Coords(), cell.Segment))
 	if cell.State != Empty {
 		return p, fmt.Errorf("cell already (%s) has state %s", cell.Coords(), cell.State)
 	}
-	starsInSegment := p.StarsPerSegment(cell.Segment.Color)
+	starsInSegment := p.StarsPerSegment(cell.Segment)
 	if starsInSegment >= p.CorrectStarsPerArea {
 		return p, fmt.Errorf("too many stars in this segment")
 	}
@@ -231,7 +212,7 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 	// Was that the last star in this segment?
 	if starsInSegment+1 == p.CorrectStarsPerArea {
 		// Eliminate everything else in this segment
-		for _, other := range p.Segments()[cell.Segment.Color] {
+		for _, other := range p.Segments()[cell.Segment] {
 			finalCoordinates = append(finalCoordinates, coord(other.Row, other.Column))
 		}
 	}
