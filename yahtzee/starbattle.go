@@ -64,6 +64,10 @@ var letters = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}
 var letterIndex = map[string]int{"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7, "I": 8, "J": 9}
 
 func ParsePuzzle(rowStrs []string, starsPerArea int) (*Puzzle, error) {
+	if len(rowStrs) == 0 {
+		return nil, fmt.Errorf("empty puzzle")
+	}
+
 	cols := make(map[string][]Cell)
 	split := strings.Split(rowStrs[0], "")
 	width := len(split)
@@ -176,8 +180,17 @@ func (p *Puzzle) coordInt(row int, col int) Coordinate {
 }
 
 func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
+	// Validate column exists
+	if _, ok := p.Cells[column]; !ok {
+		return p, fmt.Errorf("invalid column: %s", column)
+	}
+
+	// Validate row is in bounds
+	if row < 0 || row >= p.Height {
+		return p, fmt.Errorf("invalid row: %d", row)
+	}
+
 	cell := p.Cells[column][row]
-	// p.Print(fmt.Sprintf("state before placing star at (%s)(%s)", cell.Coords(), cell.Segment))
 	if cell.State != Empty {
 		return p, fmt.Errorf("cell already (%s) has state %s", cell.Coords(), cell.State)
 	}
@@ -194,42 +207,43 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 		return p, fmt.Errorf("too many stars in this column")
 	}
 
-	p.Cells[column][row].State = Starred
+	// Create a copy to test the move
+	testPuzzle := p.DeepCopy()
+	testPuzzle.Cells[column][row].State = Starred
 
 	// Eliminate nearby cells
-	// First construct a list of all possible potentialCoordinates
 	colIndex := letterIndex[column]
 	finalCoordinates := []Coordinate{
-		p.coordInt(row-1, colIndex-1),
-		p.coordInt(row-1, colIndex),
-		p.coordInt(row-1, colIndex+1),
-		p.coordInt(row, colIndex-1),
-		p.coordInt(row, colIndex+1),
-		p.coordInt(row+1, colIndex-1),
-		p.coordInt(row+1, colIndex),
-		p.coordInt(row+1, colIndex+1),
+		testPuzzle.coordInt(row-1, colIndex-1),
+		testPuzzle.coordInt(row-1, colIndex),
+		testPuzzle.coordInt(row-1, colIndex+1),
+		testPuzzle.coordInt(row, colIndex-1),
+		testPuzzle.coordInt(row, colIndex+1),
+		testPuzzle.coordInt(row+1, colIndex-1),
+		testPuzzle.coordInt(row+1, colIndex),
+		testPuzzle.coordInt(row+1, colIndex+1),
 	}
 
 	// Was that the last star in this segment?
-	if starsInSegment+1 == p.CorrectStarsPerArea {
+	if starsInSegment+1 == testPuzzle.CorrectStarsPerArea {
 		// Eliminate everything else in this segment
-		for _, other := range p.Segments()[cell.Segment] {
+		for _, other := range testPuzzle.Segments()[cell.Segment] {
 			finalCoordinates = append(finalCoordinates, coord(other.Row, other.Column))
 		}
 	}
 
 	// Was that the last star in this row?
-	if starsInRow+1 == p.CorrectStarsPerArea {
+	if starsInRow+1 == testPuzzle.CorrectStarsPerArea {
 		// Eliminate everything else in this row
-		for _, col := range p.ColumnNames() {
+		for _, col := range testPuzzle.ColumnNames() {
 			finalCoordinates = append(finalCoordinates, coord(row, col))
 		}
 	}
 
 	// Was that the last star in this column?
-	if starsInColumn+1 == p.CorrectStarsPerArea {
+	if starsInColumn+1 == testPuzzle.CorrectStarsPerArea {
 		// Eliminate everything else in this column
-		for idx := 0; idx < p.Height; idx++ {
+		for idx := 0; idx < testPuzzle.Height; idx++ {
 			finalCoordinates = append(finalCoordinates, coord(idx, column))
 		}
 	}
@@ -239,97 +253,56 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 		if coordinate.col == "Z" || coordinate.row < 0 {
 			continue
 		}
-		if letterIndex[coordinate.col] >= p.Width {
+		if letterIndex[coordinate.col] >= testPuzzle.Width {
 			continue
 		}
-		other := p.Cells[coordinate.col][coordinate.row]
+		other := testPuzzle.Cells[coordinate.col][coordinate.row]
 
 		if cell.Row == coordinate.row && cell.Column == coordinate.col || other.State == Eliminated {
 			continue
 		}
 		if other.State == Starred {
-			return p, fmt.Errorf("attempting to eliminate a starred cell! %s", other.Coords())
+			return testPuzzle, fmt.Errorf("attempting to eliminate a starred cell! %s", other.Coords())
 		}
-		p.Cells[coordinate.col][coordinate.row].State = Eliminated
+		testPuzzle.Cells[coordinate.col][coordinate.row].State = Eliminated
 	}
 
-	// Did this make the puzzle unsolvable?
-	// Check all segments to see if they're unsolvable:
-	for color, segment := range p.Segments() {
-		emptyCells, starredCells := 0, 0
-		for _, cell := range segment {
-			if cell.State == Empty {
-				emptyCells += 1
-			} else if cell.State == Starred {
-				starredCells += 1
-			}
-		}
-
-		if emptyCells < p.CorrectStarsPerArea-starredCells {
-			p.Print(fmt.Sprintf("state with errror after placing at %s", cell.Coords()))
-			return p, fmt.Errorf("not enough cells left to solve %s", color)
-		}
-	}
-
-	for idx, segment := range p.Rows() {
-		emptyCells, starredCells := 0, 0
-		for _, cell := range segment {
-			if cell.State == Empty {
-				emptyCells += 1
-			} else if cell.State == Starred {
-				starredCells += 1
-			}
-		}
-
-		if emptyCells < p.CorrectStarsPerArea-starredCells {
-			return p, fmt.Errorf("not enough cells left to solve row %d", idx)
-		}
-	}
-
-	for _, letter := range p.ColumnNames() {
-		segment := p.Columns()[letter]
-		emptyCells, starredCells := 0, 0
-		for _, cell := range segment {
-			if cell.State == Empty {
-				emptyCells += 1
-			} else if cell.State == Starred {
-				starredCells += 1
-			}
-		}
-
-		if emptyCells < p.CorrectStarsPerArea-starredCells {
-			return p, fmt.Errorf("not enough cells left to solve column %s", letter)
-		}
-	}
+	// If the move is valid, apply it to the original puzzle
+	*p = *testPuzzle
 	return p.Deduce()
 }
 
-func countStars(cells []Cell, condition func(Cell) bool) int {
+func (p *Puzzle) StarsPerSegment(segment Color) int {
 	stars := 0
-	for _, cell := range cells {
-		if condition(cell) {
-			stars++
+	for _, cell := range p.Segments()[segment] {
+		if cell.State == Starred {
+			stars += 1
 		}
 	}
+
 	return stars
 }
 
-func (p *Puzzle) StarsPerSegment(segment Color) int {
-	return countStars(p.Segments()[segment], func(c Cell) bool {
-		return c.State == Starred
-	})
-}
-
 func (p *Puzzle) StarsPerRow(row int) int {
-	return countStars(p.Rows()[row], func(c Cell) bool {
-		return c.State == Starred
-	})
+	stars := 0
+	for _, cell := range p.Rows()[row] {
+		if cell.State == Starred {
+			stars += 1
+		}
+	}
+
+	return stars
 }
 
 func (p *Puzzle) StarsPerColumn(column string) int {
-	return countStars(p.Columns()[column], func(c Cell) bool {
-		return c.State == Starred
-	})
+	stars := 0
+	for _, cell := range p.Columns()[column] {
+		if cell.State == Starred {
+			stars += 1
+		}
+	}
+
+	return stars
 }
 
 func (p *Puzzle) Solved() bool {
@@ -430,33 +403,48 @@ func isVerticalSegment(cells []Cell) bool {
 // 	return puzzle, puzzle.Solved()
 // }
 
-func (p *Puzzle) checkUnsolvability(cells []Cell) bool {
-	emptyCells, starredCells := 0, 0
-	for _, cell := range cells {
-		if cell.State == Empty {
-			emptyCells++
-		} else if cell.State == Starred {
-			starredCells++
-		}
-	}
-	return emptyCells < p.CorrectStarsPerArea-starredCells
-}
-
 func (p *Puzzle) IsUnsolvable() bool {
 	for _, segment := range p.Segments() {
-		if p.checkUnsolvability(segment) {
+		empty, stars := 0, 0
+		for _, cell := range segment {
+			switch cell.State {
+			case Empty:
+				empty++
+			case Starred:
+				stars++
+			}
+		}
+		if empty < p.CorrectStarsPerArea-stars {
 			return true
 		}
 	}
 
 	for _, row := range p.Rows() {
-		if p.checkUnsolvability(row) {
+		empty, stars := 0, 0
+		for _, cell := range row {
+			switch cell.State {
+			case Empty:
+				empty++
+			case Starred:
+				stars++
+			}
+		}
+		if empty < p.CorrectStarsPerArea-stars {
 			return true
 		}
 	}
 
-	for _, column := range p.ColumnNames() {
-		if p.checkUnsolvability(p.Columns()[column]) {
+	for _, colName := range p.ColumnNames() {
+		empty, stars := 0, 0
+		for _, cell := range p.Cells[colName] {
+			switch cell.State {
+			case Empty:
+				empty++
+			case Starred:
+				stars++
+			}
+		}
+		if empty < p.CorrectStarsPerArea-stars {
 			return true
 		}
 	}
@@ -537,94 +525,12 @@ func (p *Puzzle) Deduce() (*Puzzle, error) {
 
 	for changed {
 		changed = false
+		constraints := p.AllConstraints()
 
-		// 1. Eliminate full segments
-		for color, segment := range p.Segments() {
-			for _, cell := range segment {
-				live := p.Cells[cell.Column][cell.Row]
-				if p.StarsPerSegment(color) == p.CorrectStarsPerArea && live.State == Empty {
-					p.Cells[cell.Column][cell.Row].State = Eliminated
-					changed = true
-				}
-			}
-		}
-
-		// 2. Eliminate full rows
-		for rowIdx, row := range p.Rows() {
-			if p.StarsPerRow(rowIdx) == p.CorrectStarsPerArea {
-				for _, cell := range row {
-					if cell.State == Empty {
-						p.Cells[cell.Column][cell.Row].State = Eliminated
-						changed = true
-					}
-				}
-			}
-		}
-
-		// 3. Eliminate full columns
-		for _, col := range p.ColumnNames() {
-			if p.StarsPerColumn(col) == p.CorrectStarsPerArea {
-				for _, cell := range p.Cells[col] {
-					if cell.State == Empty {
-						p.Cells[cell.Column][cell.Row].State = Eliminated
-						changed = true
-					}
-				}
-			}
-		}
-
-		// 4. Handle horizontal/vertical segment constraint logic
-		for color, segment := range p.Segments() {
-			stars := 0
-			for _, cell := range segment {
-				live := p.Cells[cell.Column][cell.Row]
-				if live.State == Starred {
-					stars++
-				}
-			}
-
-			// todo make this work for multiple stars.
-			if p.CorrectStarsPerArea == 1 {
-				if isHorizontalSegment(segment) {
-					row := segment[0].Row
-					for _, cell := range p.Rows()[row] {
-						if cell.State == Empty && cell.Segment != color {
-							p.Cells[cell.Column][cell.Row].State = Eliminated
-							changed = true
-						}
-					}
-				}
-
-				if isVerticalSegment(segment) {
-					col := segment[0].Column
-					for _, cell := range p.Cells[col] {
-						if cell.State == Empty && cell.Segment != color {
-							p.Cells[cell.Column][cell.Row].State = Eliminated
-							changed = true
-						}
-					}
-				}
-			}
-		}
-
-		// 5. Star all remaining cells if they are the only option in their segment
-		for _, segment := range p.Segments() {
-			empties := []Cell{}
-			stars := 0
-			for _, cell := range segment {
-				live := p.Cells[cell.Column][cell.Row]
-				if live.State == Starred {
-					stars++
-				} else if live.State == Empty {
-					empties = append(empties, live)
-				}
-			}
-			needed := p.CorrectStarsPerArea - stars
-			if needed == len(empties) {
-				for _, cell := range empties {
-					p.Cells[cell.Column][cell.Row].State = Starred
-					changed = true
-				}
+		for _, constraint := range constraints {
+			if constraint.Apply(p) {
+				fmt.Printf("🧠 Deduction applied: %s\n", constraint.String())
+				changed = true
 			}
 		}
 	}
@@ -652,4 +558,244 @@ func (p *Puzzle) DeepCopy() *Puzzle {
 		Height:              p.Height,
 		CorrectStarsPerArea: p.CorrectStarsPerArea,
 	}
+}
+
+type Constraint interface {
+	Apply(p *Puzzle) bool
+	String() string
+}
+type SegmentConstraint struct {
+	Segment Color
+}
+
+func (sc SegmentConstraint) Apply(p *Puzzle) bool {
+	empties := []Cell{}
+	stars := 0
+	for _, cell := range p.Segments()[sc.Segment] {
+		live := p.Cells[cell.Column][cell.Row]
+		if live.State == Starred {
+			stars++
+		} else if live.State == Empty {
+			empties = append(empties, live)
+		}
+	}
+
+	needed := p.CorrectStarsPerArea - stars
+	if needed == 0 {
+		changed := false
+		for _, cell := range empties {
+			p.Cells[cell.Column][cell.Row].State = Eliminated
+			changed = true
+		}
+		return changed
+	} else if needed == len(empties) {
+		changed := false
+		for _, cell := range empties {
+			p.Cells[cell.Column][cell.Row].State = Starred
+			changed = true
+		}
+		return changed
+	}
+
+	return false
+}
+
+func (sc SegmentConstraint) String() string {
+	return fmt.Sprintf("SegmentConstraint(Segment %s)", sc.Segment)
+}
+
+type RowConstraint struct {
+	Row int
+}
+
+func (rc RowConstraint) Apply(p *Puzzle) bool {
+	empties := []Cell{}
+	stars := 0
+	for _, cell := range p.Rows()[rc.Row] {
+		live := p.Cells[cell.Column][cell.Row]
+		if live.State == Starred {
+			stars++
+		} else if live.State == Empty {
+			empties = append(empties, live)
+		}
+	}
+
+	needed := p.CorrectStarsPerArea - stars
+	if needed == 0 {
+		changed := false
+		for _, cell := range empties {
+			p.Cells[cell.Column][cell.Row].State = Eliminated
+			changed = true
+		}
+		return changed
+	} else if needed == len(empties) {
+		changed := false
+		for _, cell := range empties {
+			p.Cells[cell.Column][cell.Row].State = Starred
+			changed = true
+		}
+		return changed
+	}
+
+	return false
+}
+
+func (rc RowConstraint) String() string {
+	return fmt.Sprintf("RowConstraint(Row %d)", rc.Row)
+}
+
+type ColumnConstraint struct {
+	Column string
+}
+
+func (cc ColumnConstraint) Apply(p *Puzzle) bool {
+	empties := []Cell{}
+	stars := 0
+	for _, cell := range p.Columns()[cc.Column] {
+		live := p.Cells[cell.Column][cell.Row]
+		if live.State == Starred {
+			stars++
+		} else if live.State == Empty {
+			empties = append(empties, live)
+		}
+	}
+
+	needed := p.CorrectStarsPerArea - stars
+	if needed == 0 {
+		changed := false
+		for _, cell := range empties {
+			p.Cells[cell.Column][cell.Row].State = Eliminated
+			changed = true
+		}
+		return changed
+	} else if needed == len(empties) {
+		changed := false
+		for _, cell := range empties {
+			p.Cells[cell.Column][cell.Row].State = Starred
+			changed = true
+		}
+		return changed
+	}
+
+	return false
+}
+
+func (cc ColumnConstraint) String() string {
+	return fmt.Sprintf("ColumnConstraint(Column %s)", cc.Column)
+}
+
+type RowSegmentConstraint struct {
+	Row     int
+	Segment Color
+}
+
+func (rsc RowSegmentConstraint) Apply(p *Puzzle) bool {
+	allRowCells := p.Rows()[rsc.Row]
+	var segCellsInRow []Cell
+	var starsFromOtherSegments int
+
+	for _, c := range allRowCells {
+		cell := p.Cells[c.Column][c.Row]
+		if cell.Segment == rsc.Segment {
+			if cell.State == Empty {
+				segCellsInRow = append(segCellsInRow, cell)
+			}
+		} else if cell.State == Starred {
+			starsFromOtherSegments++
+		}
+	}
+
+	needed := p.CorrectStarsPerArea - starsFromOtherSegments
+	if needed <= 0 {
+		// This segment can't contribute any more stars to this row
+		changed := false
+		for _, cell := range segCellsInRow {
+			if p.Cells[cell.Column][cell.Row].State == Empty {
+				p.Cells[cell.Column][cell.Row].State = Eliminated
+				changed = true
+			}
+		}
+		return changed
+	}
+
+	return false
+}
+
+func (rsc RowSegmentConstraint) String() string {
+	return fmt.Sprintf("RowSegmentConstraint(Row %d, Segment %s)", rsc.Row, rsc.Segment)
+}
+
+type ColumnSegmentConstraint struct {
+	Column  string
+	Segment Color
+}
+
+func (csc ColumnSegmentConstraint) Apply(p *Puzzle) bool {
+	allColCells := p.Columns()[csc.Column]
+	var segCellsInCol []Cell
+	var starsFromOtherSegments int
+
+	for _, c := range allColCells {
+		cell := p.Cells[c.Column][c.Row]
+		if cell.Segment == csc.Segment {
+			if cell.State == Empty {
+				segCellsInCol = append(segCellsInCol, cell)
+			}
+		} else if cell.State == Starred {
+			starsFromOtherSegments++
+		}
+	}
+
+	needed := p.CorrectStarsPerArea - starsFromOtherSegments
+	if needed <= 0 {
+		changed := false
+		for _, cell := range segCellsInCol {
+			if p.Cells[cell.Column][cell.Row].State == Empty {
+				p.Cells[cell.Column][cell.Row].State = Eliminated
+				changed = true
+			}
+		}
+		return changed
+	}
+
+	return false
+}
+
+func (csc ColumnSegmentConstraint) String() string {
+	return fmt.Sprintf("ColumnSegmentConstraint(Column %s, Segment %s)", csc.Column, csc.Segment)
+}
+
+func (p *Puzzle) AllConstraints() []Constraint {
+	var constraints []Constraint
+
+	// Add segment constraints
+	for color := range p.Segments() {
+		constraints = append(constraints, SegmentConstraint{color})
+	}
+
+	// Add row constraints
+	for row := 0; row < p.Height; row++ {
+		constraints = append(constraints, RowConstraint{row})
+	}
+
+	// Add column constraints
+	for _, col := range p.ColumnNames() {
+		constraints = append(constraints, ColumnConstraint{col})
+	}
+
+	// Add one row-segment constraint per row
+	for row := 0; row < p.Height; row++ {
+		// Just use the first segment in the row
+		segment := p.Rows()[row][0].Segment
+		constraints = append(constraints, RowSegmentConstraint{Row: row, Segment: segment})
+	}
+
+	// Add one column-segment constraint per column
+	for _, col := range p.ColumnNames() {
+		// Just use the first segment in the column
+		segment := p.Cells[col][0].Segment
+		constraints = append(constraints, ColumnSegmentConstraint{Column: col, Segment: segment})
+	}
+
+	return constraints
 }
