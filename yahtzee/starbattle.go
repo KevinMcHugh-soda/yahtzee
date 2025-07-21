@@ -29,6 +29,7 @@ const (
 	Starred    = "⭐️"
 	Empty      = ""
 	Eliminated = "❌"
+	Blocked    = "🟫"
 )
 
 // Cell represents a single cell in the puzzle
@@ -230,20 +231,55 @@ func (p *Puzzle) Star(row int, column string) (*Puzzle, error) {
 		return p, fmt.Errorf("cell already (%s) has state %s", cell.Coords(), cell.State)
 	}
 
-	// Check constraints
-	if p.StarsPerSegment(cell.Segment) >= p.CorrectStarsPerArea {
-		return p, fmt.Errorf("too many stars in this segment")
-	}
-	if p.StarsPerRow(row) >= p.CorrectStarsPerArea {
-		return p, fmt.Errorf("too many stars in this row")
-	}
-	if p.StarsPerColumn(column) >= p.CorrectStarsPerArea {
-		return p, fmt.Errorf("too many stars in this column")
-	}
-
 	// Create a copy to test the move
 	testPuzzle := p.DeepCopy()
 	testPuzzle.Cells[column][row].State = Starred
+
+	// Check if this would create too many stars in any segment, row, or column
+	for color, cells := range testPuzzle.Segments() {
+		stars := testPuzzle.countStars(cells)
+		if stars > testPuzzle.CorrectStarsPerArea {
+			return p, fmt.Errorf("too many stars in segment %s", color)
+		}
+		empty := testPuzzle.countEmpty(cells)
+		if empty < testPuzzle.CorrectStarsPerArea-stars {
+			return p, fmt.Errorf("not enough empty cells in segment %s", color)
+		}
+	}
+
+	for idx, row := range testPuzzle.Rows() {
+		stars := testPuzzle.countStars(row)
+		if stars > testPuzzle.CorrectStarsPerArea {
+			return p, fmt.Errorf("too many stars in row %d", idx)
+		}
+		empty := testPuzzle.countEmpty(row)
+		if empty < testPuzzle.CorrectStarsPerArea-stars {
+			return p, fmt.Errorf("not enough empty cells in row %d", idx)
+		}
+	}
+
+	for col := range testPuzzle.Columns() {
+		stars := testPuzzle.countStars(testPuzzle.Cells[col])
+		if stars > testPuzzle.CorrectStarsPerArea {
+			return p, fmt.Errorf("too many stars in column %s", col)
+		}
+		empty := testPuzzle.countEmpty(testPuzzle.Cells[col])
+		if empty < testPuzzle.CorrectStarsPerArea-stars {
+			return p, fmt.Errorf("not enough empty cells in column %s", col)
+		}
+	}
+
+	// Check if any cell has stars in adjacent cells
+	colIndex := letterIndex[column]
+	for _, offset := range [][2]int{{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}} {
+		newRow := row + offset[0]
+		newCol := colIndex + offset[1]
+		if newRow >= 0 && newRow < testPuzzle.Height && newCol >= 0 && newCol < testPuzzle.Width {
+			if testPuzzle.Cells[letters[newCol]][newRow].State == Starred {
+				return p, fmt.Errorf("star would be adjacent to another star")
+			}
+		}
+	}
 
 	// Get cells to eliminate
 	elimCells := testPuzzle.getCellsToEliminate(row, column, cell)
@@ -326,7 +362,7 @@ func (p *Puzzle) Solved() bool {
 	// Check segments
 	for color := range p.Segments() {
 		if p.StarsPerSegment(color) != p.CorrectStarsPerArea {
-			fmt.Printf("not enough stars in %s. found %d, need %d\n", color, p.StarsPerSegment(color), p.CorrectStarsPerArea)
+			fmt.Printf("incorrect number of stars in %s. found %d, need %d\n", color, p.StarsPerSegment(color), p.CorrectStarsPerArea)
 			return false
 		}
 	}
@@ -334,7 +370,7 @@ func (p *Puzzle) Solved() bool {
 	// Check rows
 	for idx := range p.Rows() {
 		if p.StarsPerRow(idx) != p.CorrectStarsPerArea {
-			fmt.Printf("not enough stars in row %d. found %d, need %d\n", idx, p.StarsPerRow(idx), p.CorrectStarsPerArea)
+			fmt.Printf("incorrect number of stars in row %d. found %d, need %d\n", idx, p.StarsPerRow(idx), p.CorrectStarsPerArea)
 			return false
 		}
 	}
@@ -342,7 +378,7 @@ func (p *Puzzle) Solved() bool {
 	// Check columns
 	for letter := range p.Columns() {
 		if p.StarsPerColumn(letter) != p.CorrectStarsPerArea {
-			fmt.Printf("not enough stars in column %s. found %d, need %d\n", letter, p.StarsPerColumn(letter), p.CorrectStarsPerArea)
+			fmt.Printf("incorrect number of stars in column %s. found %d, need %d\n", letter, p.StarsPerColumn(letter), p.CorrectStarsPerArea)
 			return false
 		}
 	}
@@ -350,31 +386,129 @@ func (p *Puzzle) Solved() bool {
 	return true
 }
 
-// IsUnsolvable checks if the puzzle is unsolvable
+// IsUnsolvable returns true if the puzzle is in an unsolvable state
 func (p *Puzzle) IsUnsolvable() bool {
-	// Check segments
-	for _, segment := range p.Segments() {
-		empty := p.countEmpty(segment)
-		stars := p.countStars(segment)
-		if empty < p.CorrectStarsPerArea-stars {
-			return true
-		}
-	}
-
-	// Check rows
+	// Check if any row or column has too many stars
 	for _, row := range p.Rows() {
-		empty := p.countEmpty(row)
-		stars := p.countStars(row)
-		if empty < p.CorrectStarsPerArea-stars {
+		stars := 0
+		for _, cell := range row {
+			if cell.State == Starred {
+				stars++
+			}
+		}
+		if stars > p.CorrectStarsPerArea {
 			return true
 		}
 	}
 
-	// Check columns
-	for _, colName := range p.ColumnNames() {
-		empty := p.countEmpty(p.Cells[colName])
-		stars := p.countStars(p.Cells[colName])
-		if empty < p.CorrectStarsPerArea-stars {
+	for _, col := range p.Columns() {
+		stars := 0
+		for _, cell := range col {
+			if cell.State == Starred {
+				stars++
+			}
+		}
+		if stars > p.CorrectStarsPerArea {
+			return true
+		}
+	}
+
+	// Check if any segment has too many stars
+	for color := range p.Segments() {
+		stars := p.StarsPerSegment(color)
+		if stars > p.CorrectStarsPerArea {
+			return true
+		}
+	}
+
+	// Check if any row, column, or segment can't get enough stars
+	for _, row := range p.Rows() {
+		availableCells := 0
+		for _, cell := range row {
+			if cell.State != Blocked {
+				availableCells++
+			}
+		}
+		if availableCells < p.CorrectStarsPerArea {
+			return true
+		}
+	}
+
+	for _, col := range p.Columns() {
+		availableCells := 0
+		for _, cell := range col {
+			if cell.State != Blocked {
+				availableCells++
+			}
+		}
+		if availableCells < p.CorrectStarsPerArea {
+			return true
+		}
+	}
+
+	for _, cells := range p.Segments() {
+		availableCells := 0
+		for _, cell := range cells {
+			if p.Cells[cell.Column][cell.Row].State != Blocked {
+				availableCells++
+			}
+		}
+		if availableCells < p.CorrectStarsPerArea {
+			return true
+		}
+	}
+
+	// Check if any adjacent cells both have stars
+	for i := 0; i < p.Height; i++ {
+		for j := 0; j < p.Width; j++ {
+			if p.Cells[letters[j]][i].State == Starred {
+				// Check adjacent cells
+				for _, offset := range [][2]int{{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}} {
+					newRow := i + offset[0]
+					newCol := j + offset[1]
+					if newRow >= 0 && newRow < p.Height && newCol >= 0 && newCol < p.Width {
+						if p.Cells[letters[newCol]][newRow].State == Starred {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Check if any row, column, or segment has too many blocked cells
+	for _, row := range p.Rows() {
+		blocked := 0
+		for _, cell := range row {
+			if cell.State == Blocked {
+				blocked++
+			}
+		}
+		if p.Width-blocked < p.CorrectStarsPerArea {
+			return true
+		}
+	}
+
+	for _, col := range p.Columns() {
+		blocked := 0
+		for _, cell := range col {
+			if cell.State == Blocked {
+				blocked++
+			}
+		}
+		if p.Height-blocked < p.CorrectStarsPerArea {
+			return true
+		}
+	}
+
+	for _, cells := range p.Segments() {
+		blocked := 0
+		for _, cell := range cells {
+			if p.Cells[cell.Column][cell.Row].State == Blocked {
+				blocked++
+			}
+		}
+		if len(cells)-blocked < p.CorrectStarsPerArea {
 			return true
 		}
 	}
@@ -382,11 +516,12 @@ func (p *Puzzle) IsUnsolvable() bool {
 	return false
 }
 
+var globalSolveCounter int
+
 // Solve attempts to solve the puzzle
 func Solve(puzzle Puzzle) (Puzzle, bool) {
 	globalSolveCounter++
-	fmt.Println("calls to Solve:", globalSolveCounter)
-	if globalSolveCounter > 1000 {
+	if globalSolveCounter > 50000 {
 		fmt.Println("bailing!")
 		return puzzle, false
 	}
@@ -399,18 +534,164 @@ func Solve(puzzle Puzzle) (Puzzle, bool) {
 		return puzzle, false
 	}
 
-	// Try solving using smallest segments first
+	// Try to deduce first
+	deduced, err := puzzle.Deduce()
+	if err != nil {
+		return puzzle, false
+	}
+	puzzle = *deduced
+
+	// Try to place stars systematically by segment
 	segments := getSortedSegments(puzzle)
-	for _, seg := range segments {
-		if result, solved := trySolveSegment(puzzle, seg); solved {
-			return result, true
+	sort.SliceStable(segments, func(i, j int) bool {
+		starsI := puzzle.StarsPerSegment(segments[i].color)
+		starsJ := puzzle.StarsPerSegment(segments[j].color)
+		if starsI != starsJ {
+			return starsI < starsJ
+		}
+		// Prioritize segments with fewer empty cells
+		emptyI := puzzle.countEmpty(segments[i].cells)
+		emptyJ := puzzle.countEmpty(segments[j].cells)
+		if emptyI != emptyJ {
+			return emptyI < emptyJ
+		}
+		return len(segments[i].cells) < len(segments[j].cells)
+	})
+
+	// Try each segment in order
+	for _, segment := range segments {
+		stars := puzzle.StarsPerSegment(segment.color)
+		if stars >= puzzle.CorrectStarsPerArea {
+			continue
+		}
+
+		// Get empty cells in this segment
+		emptyCells := make([]Cell, 0)
+		for _, cell := range segment.cells {
+			if puzzle.Cells[cell.Column][cell.Row].State == Empty {
+				emptyCells = append(emptyCells, cell)
+			}
+		}
+
+		// Sort empty cells by number of available neighbors
+		sort.SliceStable(emptyCells, func(i, j int) bool {
+			availableI := puzzle.countAvailableNeighbors(emptyCells[i])
+			availableJ := puzzle.countAvailableNeighbors(emptyCells[j])
+			return availableI < availableJ
+		})
+
+		// Try each empty cell
+		for _, cell := range emptyCells {
+			// Try placing a star
+			newPuzzle := puzzle.DeepCopy()
+			newPuzzle.Cells[cell.Column][cell.Row].State = Starred
+
+			// Recursively solve
+			solved, success := Solve(*newPuzzle)
+			if success {
+				return solved, true
+			}
+
+			// If placing a star didn't work, try eliminating the cell
+			newPuzzle = puzzle.DeepCopy()
+			newPuzzle.Cells[cell.Column][cell.Row].State = Eliminated
+
+			// Recursively solve
+			solved, success = Solve(*newPuzzle)
+			if success {
+				return solved, true
+			}
 		}
 	}
 
 	return puzzle, false
 }
 
-var globalSolveCounter int
+// countAvailableNeighbors counts the number of empty or starred neighbors a cell has
+func (p *Puzzle) countAvailableNeighbors(cell Cell) int {
+	count := 0
+	for _, offset := range [][2]int{{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}} {
+		row := letterIndex[cell.Column] + offset[0]
+		col := cell.Row + offset[1]
+		if row >= 0 && row < p.Width && col >= 0 && col < p.Height {
+			state := p.Cells[letters[row]][col].State
+			if state == Empty || state == Starred {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+// countSegmentConstraints returns the number of constraints affecting a segment
+func countSegmentConstraints(p Puzzle, cells []Cell) int {
+	constraints := 0
+	for _, cell := range cells {
+		if p.Cells[cell.Column][cell.Row].State != Empty {
+			constraints++
+		}
+		// Count adjacent stars and eliminated cells
+		for _, offset := range [][2]int{{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}} {
+			row := cell.Row + offset[0]
+			col := letterIndex[cell.Column] + offset[1]
+			if row >= 0 && row < p.Height && col >= 0 && col < p.Width {
+				state := p.Cells[letters[col]][row].State
+				if state == Starred || state == Eliminated {
+					constraints++
+				}
+			}
+		}
+	}
+	return constraints
+}
+
+// countCellConstraints returns the number of constraints affecting a cell
+func countCellConstraints(p Puzzle, cell Cell) int {
+	constraints := 0
+	// Count adjacent stars and eliminated cells
+	for _, offset := range [][2]int{{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}} {
+		row := cell.Row + offset[0]
+		col := letterIndex[cell.Column] + offset[1]
+		if row >= 0 && row < p.Height && col >= 0 && col < p.Width {
+			state := p.Cells[letters[col]][row].State
+			if state == Starred || state == Eliminated {
+				constraints++
+			}
+		}
+	}
+	return constraints
+}
+
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
+}
+
+// generateCombinations generates all possible combinations of k cells from a slice of cells
+func generateCombinations(cells []Cell, k int) [][]Cell {
+	if k == 0 {
+		return [][]Cell{{}}
+	}
+	if len(cells) == 0 {
+		return nil
+	}
+
+	first := cells[0]
+	rest := cells[1:]
+
+	// Combinations that include the first element
+	withFirst := generateCombinations(rest, k-1)
+	for i := range withFirst {
+		withFirst[i] = append([]Cell{first}, withFirst[i]...)
+	}
+
+	// Combinations that exclude the first element
+	withoutFirst := generateCombinations(rest, k)
+
+	return append(withFirst, withoutFirst...)
+}
 
 func getSortedSegments(puzzle Puzzle) []segmentInfo {
 	var segments []segmentInfo
@@ -428,50 +709,199 @@ type segmentInfo struct {
 	cells []Cell
 }
 
-func trySolveSegment(puzzle Puzzle, seg segmentInfo) (Puzzle, bool) {
-	for _, cell := range seg.cells {
-		if cell.State != Empty {
-			continue
-		}
-
-		// Try placing a star
-		starClone := puzzle.DeepCopy()
-		newPuzzle, err := starClone.Star(cell.Row, cell.Column)
-		if err == nil {
-			if newPuzzle.Solved() {
-				return *newPuzzle, true
-			}
-			if result, solved := Solve(*newPuzzle); solved {
-				return result, true
-			}
-		}
-
-		// Try eliminating the cell
-		elimClone := puzzle.DeepCopy()
-		elimClone.Cells[cell.Column][cell.Row].State = Eliminated
-		if elimClone.Solved() {
-			return *elimClone, true
-		}
-		if result, solved := Solve(*elimClone); solved {
-			return result, true
-		}
-	}
-	return puzzle, false
-}
-
 // Deduce applies all constraints to the puzzle
 func (p *Puzzle) Deduce() (*Puzzle, error) {
 	changed := true
 	for changed {
 		changed = false
-		for _, constraint := range p.AllConstraints() {
-			if constraint.Apply(p) {
-				fmt.Printf("🧠 Deduction applied: %s\n", constraint.String())
-				changed = true
+
+		// Apply row constraints
+		for i := 0; i < p.Height; i++ {
+			row := p.Rows()[i]
+			stars := p.countStars(row)
+			if stars == p.CorrectStarsPerArea {
+				// Mark all remaining empty cells as eliminated
+				for _, cell := range row {
+					if cell.State == Empty {
+						cell.State = Eliminated
+						changed = true
+					}
+				}
+			}
+		}
+
+		// Apply column constraints
+		for _, col := range p.ColumnNames() {
+			stars := p.StarsPerColumn(col)
+			if stars == p.CorrectStarsPerArea {
+				// Mark all remaining empty cells as eliminated
+				for _, cell := range p.Cells[col] {
+					if cell.State == Empty {
+						cell.State = Eliminated
+						changed = true
+					}
+				}
+			}
+		}
+
+		// Apply segment constraints
+		for color, cells := range p.Segments() {
+			stars := p.StarsPerSegment(color)
+			if stars == p.CorrectStarsPerArea {
+				// Mark all remaining empty cells as eliminated
+				for _, cell := range cells {
+					if p.Cells[cell.Column][cell.Row].State == Empty {
+						p.Cells[cell.Column][cell.Row].State = Eliminated
+						changed = true
+					}
+				}
+			}
+		}
+
+		// Apply adjacency constraints
+		for i := 0; i < p.Height; i++ {
+			for j := 0; j < p.Width; j++ {
+				if p.Cells[letters[j]][i].State == Starred {
+					// Eliminate adjacent cells
+					for _, offset := range [][2]int{{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}} {
+						newRow := i + offset[0]
+						newCol := j + offset[1]
+						if newRow >= 0 && newRow < p.Height && newCol >= 0 && newCol < p.Width {
+							if p.Cells[letters[newCol]][newRow].State == Empty {
+								p.Cells[letters[newCol]][newRow].State = Eliminated
+								changed = true
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Apply forced star placement
+		for i := 0; i < p.Height; i++ {
+			for j := 0; j < p.Width; j++ {
+				if p.Cells[letters[j]][i].State == Empty {
+					// Check if this is the only possible position for a star in its row, column, or segment
+					row := p.Rows()[i]
+					col := p.Cells[letters[j]]
+					segment := p.Segments()[p.GetCellColor(letters[j], i)]
+
+					rowStars := p.countStars(row)
+					colStars := p.StarsPerColumn(letters[j])
+					segStars := p.StarsPerSegment(p.GetCellColor(letters[j], i))
+
+					rowEmpty := p.countEmpty(row)
+					colEmpty := p.countEmpty(col)
+					segEmpty := p.countEmpty(segment)
+
+					if (rowStars < p.CorrectStarsPerArea && rowEmpty == 1) ||
+						(colStars < p.CorrectStarsPerArea && colEmpty == 1) ||
+						(segStars < p.CorrectStarsPerArea && segEmpty == 1) {
+						p.Cells[letters[j]][i].State = Starred
+						changed = true
+					}
+				}
+			}
+		}
+
+		// Apply forced elimination
+		for i := 0; i < p.Height; i++ {
+			for j := 0; j < p.Width; j++ {
+				if p.Cells[letters[j]][i].State == Empty {
+					// Check if placing a star here would force too many stars in a row, column, or segment
+					rowStars := p.StarsPerRow(i)
+					colStars := p.StarsPerColumn(letters[j])
+					segStars := p.StarsPerSegment(p.GetCellColor(letters[j], i))
+
+					if rowStars >= p.CorrectStarsPerArea ||
+						colStars >= p.CorrectStarsPerArea ||
+						segStars >= p.CorrectStarsPerArea {
+						p.Cells[letters[j]][i].State = Eliminated
+						changed = true
+					}
+				}
+			}
+		}
+
+		// Apply pattern-based deductions
+		for i := 0; i < p.Height; i++ {
+			for j := 0; j < p.Width; j++ {
+				if p.Cells[letters[j]][i].State == Empty {
+					// Check for patterns that force star placement or elimination
+					if p.isForceStarPattern(i, j) {
+						p.Cells[letters[j]][i].State = Starred
+						changed = true
+					} else if p.isForceEliminationPattern(i, j) {
+						p.Cells[letters[j]][i].State = Eliminated
+						changed = true
+					}
+				}
 			}
 		}
 	}
+
 	return p, nil
+}
+
+// isForceStarPattern checks if the cell must contain a star based on surrounding patterns
+func (p *Puzzle) isForceStarPattern(row, col int) bool {
+	// Check if this is the only possible position for a star in a 2x2 area
+	for _, area := range [][4][2]int{
+		{{0, 0}, {0, 1}, {1, 0}, {1, 1}},
+		{{-1, 0}, {-1, 1}, {0, 0}, {0, 1}},
+		{{0, -1}, {0, 0}, {1, -1}, {1, 0}},
+		{{-1, -1}, {-1, 0}, {0, -1}, {0, 0}},
+	} {
+		emptyCount := 0
+		validArea := true
+		for _, pos := range area {
+			newRow := row + pos[0]
+			newCol := col + pos[1]
+			if newRow < 0 || newRow >= p.Height || newCol < 0 || newCol >= p.Width {
+				validArea = false
+				break
+			}
+			if p.Cells[letters[newCol]][newRow].State == Empty {
+				emptyCount++
+			} else if p.Cells[letters[newCol]][newRow].State == Starred {
+				validArea = false
+				break
+			}
+		}
+		if validArea && emptyCount == 1 {
+			return true
+		}
+	}
+	return false
+}
+
+// isForceEliminationPattern checks if the cell cannot contain a star based on surrounding patterns
+func (p *Puzzle) isForceEliminationPattern(row, col int) bool {
+	// Check if placing a star here would create an impossible pattern
+	for _, pattern := range [][3][2]int{
+		{{0, 0}, {0, 1}, {0, 2}},
+		{{0, 0}, {1, 0}, {2, 0}},
+		{{0, 0}, {1, 1}, {2, 2}},
+		{{0, 2}, {1, 1}, {2, 0}},
+	} {
+		starCount := 0
+		validPattern := true
+		for _, pos := range pattern {
+			newRow := row + pos[0]
+			newCol := col + pos[1]
+			if newRow < 0 || newRow >= p.Height || newCol < 0 || newCol >= p.Width {
+				validPattern = false
+				break
+			}
+			if p.Cells[letters[newCol]][newRow].State == Starred {
+				starCount++
+			}
+		}
+		if validPattern && starCount >= 2 {
+			return true
+		}
+	}
+	return false
 }
 
 // DeepCopy creates a deep copy of the puzzle
@@ -535,6 +965,7 @@ func (sc SegmentConstraint) Apply(p *Puzzle) bool {
 
 	needed := p.CorrectStarsPerArea - stars
 	if needed == 0 {
+		// If we have enough stars, eliminate all other cells
 		changed := false
 		for _, cell := range empties {
 			p.Cells[cell.Column][cell.Row].State = Eliminated
@@ -542,14 +973,43 @@ func (sc SegmentConstraint) Apply(p *Puzzle) bool {
 		}
 		return changed
 	} else if needed == len(empties) {
+		// If we need exactly the number of empty cells, they must all be stars
 		changed := false
 		for _, cell := range empties {
 			p.Cells[cell.Column][cell.Row].State = Starred
 			changed = true
 		}
 		return changed
+	} else if needed < 0 {
+		// If we have too many stars, the puzzle is unsolvable
+		return false
+	} else if len(empties) < needed {
+		// If we don't have enough empty cells, the puzzle is unsolvable
+		return false
 	}
-	return false
+
+	// Check if any empty cells are adjacent to stars
+	changed := false
+	for _, cell := range empties {
+		colIndex := letterIndex[cell.Column]
+		adjacentToStar := false
+		for _, offset := range [][2]int{{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}} {
+			row := cell.Row + offset[0]
+			col := colIndex + offset[1]
+			if row >= 0 && row < p.Height && col >= 0 && col < p.Width {
+				adjCell := p.Cells[letters[col]][row]
+				if adjCell.State == Starred {
+					adjacentToStar = true
+					break
+				}
+			}
+		}
+		if adjacentToStar {
+			p.Cells[cell.Column][cell.Row].State = Eliminated
+			changed = true
+		}
+	}
+	return changed
 }
 
 func (sc SegmentConstraint) String() string {
@@ -652,6 +1112,8 @@ func (rsc RowSegmentConstraint) Apply(p *Puzzle) bool {
 		if cell.Segment == rsc.Segment {
 			if cell.State == Empty {
 				segCellsInRow = append(segCellsInRow, cell)
+			} else if cell.State == Starred {
+				starsFromOtherSegments++
 			}
 		} else if cell.State == Starred {
 			starsFromOtherSegments++
@@ -664,6 +1126,15 @@ func (rsc RowSegmentConstraint) Apply(p *Puzzle) bool {
 		for _, cell := range segCellsInRow {
 			if p.Cells[cell.Column][cell.Row].State == Empty {
 				p.Cells[cell.Column][cell.Row].State = Eliminated
+				changed = true
+			}
+		}
+		return changed
+	} else if needed == len(segCellsInRow) {
+		changed := false
+		for _, cell := range segCellsInRow {
+			if p.Cells[cell.Column][cell.Row].State == Empty {
+				p.Cells[cell.Column][cell.Row].State = Starred
 				changed = true
 			}
 		}
@@ -692,6 +1163,8 @@ func (csc ColumnSegmentConstraint) Apply(p *Puzzle) bool {
 		if cell.Segment == csc.Segment {
 			if cell.State == Empty {
 				segCellsInCol = append(segCellsInCol, cell)
+			} else if cell.State == Starred {
+				starsFromOtherSegments++
 			}
 		} else if cell.State == Starred {
 			starsFromOtherSegments++
@@ -704,6 +1177,15 @@ func (csc ColumnSegmentConstraint) Apply(p *Puzzle) bool {
 		for _, cell := range segCellsInCol {
 			if p.Cells[cell.Column][cell.Row].State == Empty {
 				p.Cells[cell.Column][cell.Row].State = Eliminated
+				changed = true
+			}
+		}
+		return changed
+	} else if needed == len(segCellsInCol) {
+		changed := false
+		for _, cell := range segCellsInCol {
+			if p.Cells[cell.Column][cell.Row].State == Empty {
+				p.Cells[cell.Column][cell.Row].State = Starred
 				changed = true
 			}
 		}
@@ -735,16 +1217,26 @@ func (p *Puzzle) AllConstraints() []Constraint {
 		constraints = append(constraints, ColumnConstraint{col})
 	}
 
-	// Add one row-segment constraint per row
+	// Add row-segment constraints for each segment in each row
 	for row := 0; row < p.Height; row++ {
-		segment := p.Rows()[row][0].Segment
-		constraints = append(constraints, RowSegmentConstraint{Row: row, Segment: segment})
+		segmentsInRow := make(map[Color]bool)
+		for _, cell := range p.Rows()[row] {
+			if !segmentsInRow[cell.Segment] {
+				constraints = append(constraints, RowSegmentConstraint{Row: row, Segment: cell.Segment})
+				segmentsInRow[cell.Segment] = true
+			}
+		}
 	}
 
-	// Add one column-segment constraint per column
+	// Add column-segment constraints for each segment in each column
 	for _, col := range p.ColumnNames() {
-		segment := p.Cells[col][0].Segment
-		constraints = append(constraints, ColumnSegmentConstraint{Column: col, Segment: segment})
+		segmentsInCol := make(map[Color]bool)
+		for _, cell := range p.Cells[col] {
+			if !segmentsInCol[cell.Segment] {
+				constraints = append(constraints, ColumnSegmentConstraint{Column: col, Segment: cell.Segment})
+				segmentsInCol[cell.Segment] = true
+			}
+		}
 	}
 
 	return constraints

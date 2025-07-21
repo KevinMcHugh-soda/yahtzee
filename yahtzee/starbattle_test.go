@@ -453,3 +453,43 @@ func TestAllConstraints(t *testing.T) {
 		t.Errorf("AllConstraints() returned %d constraints, want %d", len(constraints), expectedConstraints)
 	}
 }
+
+func TestSolve10x10Puzzle(t *testing.T) {
+	// Create a 10x10 puzzle with 2 stars per area
+	rows := []string{
+		"🟨🟨🟨🟦🟦🟦🟩🟩🟩🟩",
+		"🟨🟨🟨🟦🟦🟦🟩🟩🟩🟩",
+		"🟨🟨🟨🟦🟦🟦🟩🟩🟩🟩",
+		"🟥🟥🟥🟧🟧🟧🟪🟪🟪🟪",
+		"🟥🟥🟥🟧🟧🟧🟪🟪🟪🟪",
+		"🟥🟥🟥🟧🟧🟧🟪🟪🟪🟪",
+		"⬛⬛⬛⬜⬜⬜🟫🟫🟫🟫",
+		"⬛⬛⬛⬜⬜⬜🟫🟫🟫🟫",
+		"⬛⬛⬛⬜⬜⬜🟫🟫🟫🟫",
+		"🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫",
+	}
+
+	puzzle, err := ParsePuzzle(rows, 2)
+	if err != nil {
+		t.Fatalf("Failed to parse puzzle: %v", err)
+	}
+
+	// Reset the global solve counter
+	globalSolveCounter = 0
+
+	// Try to solve the puzzle
+	solved, success := Solve(*puzzle)
+	if !success {
+		t.Fatalf("Failed to solve puzzle after %d attempts", globalSolveCounter)
+	}
+
+	// Verify the solution
+	if !solved.Solved() {
+		t.Error("Solution verification failed")
+		solved.Print("Invalid solution:")
+	}
+
+	// Print the solution
+	solved.Print("Solution found:")
+	t.Logf("Solved in %d attempts", globalSolveCounter)
+}
